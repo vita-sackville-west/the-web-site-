@@ -95,21 +95,85 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Space Mono',monosp
 
 /* ── RIGHT PANEL (inbox + profiles) ── */
 #right-panel{position:fixed;top:59px;right:0;bottom:68px;width:320px;
-  background:rgba(26,10,46,0.95);border-left:2px solid var(--pink);
+  background:rgba(26,10,46,0.97);border-left:2px solid var(--pink);
   z-index:40;transform:translateX(100%);
   transition:transform 0.35s cubic-bezier(0.16,1,0.3,1);
-  display:flex;flex-direction:column;}
+  display:flex;flex-direction:column;overflow:hidden;}
 #right-panel.open{transform:translateX(0);}
+
+/* Three views slide horizontally inside the panel */
+#rp-views{display:flex;width:300%;height:100%;transition:transform 0.3s cubic-bezier(0.16,1,0.3,1);}
+#rp-views.show-profile{transform:translateX(-33.333%);}
+#rp-views.show-chat{transform:translateX(-66.666%);}
+.rp-view{width:33.333%;flex-shrink:0;display:flex;flex-direction:column;height:100%;overflow:hidden;}
+
 .rp-header{display:flex;align-items:center;justify-content:space-between;
   padding:12px 16px;border-bottom:2px solid rgba(255,110,180,0.2);flex-shrink:0;}
-.rp-title{font-family:'VT323',monospace;font-size:22px;color:var(--white);letter-spacing:2px;}
+.rp-title{font-family:'VT323',monospace;font-size:20px;color:var(--white);letter-spacing:2px;}
 .rp-close{background:none;border:none;color:rgba(255,245,250,0.4);
-  font-family:'VT323',monospace;font-size:16px;cursor:pointer;letter-spacing:1px;}
+  font-family:'VT323',monospace;font-size:14px;cursor:pointer;letter-spacing:1px;}
+.rp-back{background:none;border:none;color:rgba(255,245,250,0.5);
+  font-family:'VT323',monospace;font-size:13px;letter-spacing:2px;cursor:pointer;
+  display:flex;align-items:center;gap:4px;padding:0;}
+.rp-back:hover{color:var(--white);}
 .rp-tabs{display:flex;border-bottom:2px solid rgba(255,110,180,0.2);flex-shrink:0;}
-.rp-tab{flex:1;padding:8px;font-family:'VT323',monospace;font-size:14px;letter-spacing:2px;
+.rp-tab{flex:1;padding:8px;font-family:'VT323',monospace;font-size:13px;letter-spacing:2px;
   color:rgba(255,245,250,0.4);background:none;border:none;cursor:pointer;text-align:center;}
 .rp-tab.active{color:var(--pink);border-bottom:2px solid var(--pink);margin-bottom:-2px;}
 .rp-content{flex:1;overflow-y:auto;padding:10px 12px;}
+
+/* Profile view inside panel */
+.rp-profile-photos{height:180px;display:flex;gap:3px;flex-shrink:0;}
+.rp-profile-photo-main{flex:2;position:relative;overflow:hidden;background:rgba(255,245,250,0.04);}
+.rp-profile-photo-main img{width:100%;height:100%;object-fit:cover;}
+.rp-profile-photos-side{flex:1;display:flex;flex-direction:column;gap:3px;}
+.rp-profile-photo-side{flex:1;position:relative;overflow:hidden;background:rgba(255,245,250,0.03);}
+.rp-profile-photo-side img{width:100%;height:100%;object-fit:cover;}
+.rp-profile-overlay{position:absolute;bottom:0;left:0;right:0;height:55%;
+  background:linear-gradient(transparent,rgba(26,10,46,0.97));
+  display:flex;flex-direction:column;justify-content:flex-end;padding:10px 14px 8px;}
+.rp-profile-name{font-family:'VT323',monospace;font-size:36px;color:var(--white);letter-spacing:1px;line-height:1;}
+.rp-profile-username{font-family:'VT323',monospace;font-size:14px;color:rgba(255,245,250,0.45);letter-spacing:2px;}
+.rp-profile-station{font-family:'VT323',monospace;font-size:13px;color:var(--cyan);letter-spacing:2px;margin-top:1px;}
+.rp-profile-body{flex:1;overflow-y:auto;padding:12px 14px;}
+.rp-avail-label{font-family:'VT323',monospace;font-size:11px;letter-spacing:3px;color:rgba(255,245,250,0.3);margin-bottom:6px;}
+.rp-hours{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:14px;}
+.rp-hour-chip{font-family:'VT323',monospace;font-size:12px;border:1px solid rgba(255,110,180,0.25);
+  color:rgba(255,245,250,0.4);padding:2px 7px;letter-spacing:1px;}
+.rp-hour-chip.current{border-color:var(--pink);color:var(--pink);background:rgba(255,110,180,0.1);}
+.rp-msg-btn{width:100%;background:var(--pink);border:2px solid var(--hot);color:var(--white);
+  font-family:'VT323',monospace;font-size:18px;letter-spacing:3px;padding:11px;cursor:pointer;
+  position:relative;flex-shrink:0;margin:0 14px 14px;width:calc(100% - 28px);}
+.rp-msg-btn::after{content:'';position:absolute;bottom:-3px;right:-3px;
+  width:100%;height:100%;background:var(--hot);z-index:-1;}
+.rp-msg-btn:hover{background:var(--hot);}
+
+/* Chat inside panel */
+.rp-chat-top{display:flex;align-items:center;gap:10px;padding:10px 14px;
+  border-bottom:2px solid rgba(255,245,250,0.08);flex-shrink:0;}
+.rp-chat-av{width:32px;height:32px;border:2px solid var(--pink);
+  display:flex;align-items:center;justify-content:center;font-size:14px;
+  flex-shrink:0;overflow:hidden;cursor:pointer;}
+.rp-chat-av:hover{border-color:var(--cyan);}
+.rp-chat-av img{width:100%;height:100%;object-fit:cover;}
+.rp-chat-info{flex:1;cursor:pointer;}
+.rp-chat-name{font-family:'VT323',monospace;font-size:17px;color:var(--white);letter-spacing:1px;line-height:1;}
+.rp-chat-name:hover{color:var(--cyan);}
+.rp-chat-sub{font-family:'VT323',monospace;font-size:11px;color:rgba(255,245,250,0.3);letter-spacing:1px;}
+.rp-expiry-note{text-align:center;font-family:'VT323',monospace;font-size:11px;
+  color:rgba(255,245,250,0.15);letter-spacing:2px;padding:6px 0 2px;flex-shrink:0;}
+.rp-messages{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;}
+.rp-input-bar{display:flex;gap:6px;padding:8px 10px 12px;
+  border-top:2px solid rgba(255,245,250,0.08);flex-shrink:0;align-items:flex-end;}
+.rp-chat-input{flex:1;background:rgba(255,245,250,0.06);border:2px solid rgba(255,245,250,0.12);
+  color:var(--white);font-family:'Space Mono',monospace;font-size:12px;
+  padding:8px 10px;resize:none;outline:none;line-height:1.4;max-height:80px;}
+.rp-chat-input:focus{border-color:var(--pink);}
+.rp-chat-input::placeholder{color:rgba(255,245,250,0.2);}
+.rp-chat-send{background:var(--pink);border:2px solid var(--hot);color:var(--white);
+  font-family:'VT323',monospace;font-size:15px;padding:8px 11px;cursor:pointer;
+  flex-shrink:0;align-self:flex-end;}
+.rp-chat-send:hover{background:var(--hot);}
 
 /* Inbox threads */
 .inbox-thread{display:flex;align-items:center;gap:10px;padding:10px 12px;margin-bottom:8px;
@@ -434,15 +498,65 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Space Mono',monosp
 
   <!-- RIGHT PANEL -->
   <div id="right-panel">
-    <div class="rp-header">
-      <div class="rp-title" id="rp-title">INBOX</div>
-      <button class="rp-close" id="rp-close">CLOSE ✕</button>
+    <div id="rp-views">
+
+      <!-- VIEW 0: INBOX/PEOPLE LIST -->
+      <div class="rp-view" id="rp-list-view">
+        <div class="rp-header">
+          <div class="rp-title">THE WEB</div>
+          <button class="rp-close" id="rp-close">✕</button>
+        </div>
+        <div class="rp-tabs">
+          <button class="rp-tab active" id="tab-inbox" onclick="switchRpTab('inbox')">MESSAGES</button>
+          <button class="rp-tab" id="tab-people" onclick="switchRpTab('people')">PEOPLE</button>
+        </div>
+        <div class="rp-content" id="rp-content"></div>
+      </div>
+
+      <!-- VIEW 1: PROFILE -->
+      <div class="rp-view" id="rp-profile-view">
+        <div class="rp-header">
+          <button class="rp-back" id="rp-profile-back">← BACK</button>
+          <button class="rp-close" id="rp-profile-close">✕</button>
+        </div>
+        <div class="rp-profile-photos">
+          <div class="rp-profile-photo-main" id="rp-photo-main"></div>
+          <div class="rp-profile-photos-side">
+            <div class="rp-profile-photo-side" id="rp-photo-side1"></div>
+            <div class="rp-profile-photo-side" id="rp-photo-side2"></div>
+          </div>
+          <div class="rp-profile-overlay">
+            <div class="rp-profile-name" id="rp-profile-name"></div>
+            <div class="rp-profile-username" id="rp-profile-username"></div>
+            <div class="rp-profile-station" id="rp-profile-station"></div>
+          </div>
+        </div>
+        <div class="rp-profile-body">
+          <div class="rp-avail-label">AVAILABLE</div>
+          <div class="rp-hours" id="rp-hours"></div>
+        </div>
+        <button class="rp-msg-btn" id="rp-msg-btn">MESSAGE →</button>
+      </div>
+
+      <!-- VIEW 2: CHAT -->
+      <div class="rp-view" id="rp-chat-view">
+        <div class="rp-chat-top">
+          <button class="rp-back" id="rp-chat-back">← INBOX</button>
+          <div class="rp-chat-av" id="rp-chat-av"></div>
+          <div class="rp-chat-info" id="rp-chat-info">
+            <div class="rp-chat-name" id="rp-chat-name"></div>
+            <div class="rp-chat-sub" id="rp-chat-sub"></div>
+          </div>
+        </div>
+        <div class="rp-expiry-note">⚠ messages disappear after 24 hours</div>
+        <div class="rp-messages" id="rp-messages"></div>
+        <div class="rp-input-bar">
+          <textarea class="rp-chat-input" id="rp-chat-input" placeholder="say something..." rows="1"></textarea>
+          <button class="rp-chat-send" id="rp-chat-send">→</button>
+        </div>
+      </div>
+
     </div>
-    <div class="rp-tabs">
-      <button class="rp-tab active" id="tab-inbox" onclick="switchRpTab('inbox')">MESSAGES</button>
-      <button class="rp-tab" id="tab-people" onclick="switchRpTab('people')">PEOPLE</button>
-    </div>
-    <div class="rp-content" id="rp-content"></div>
   </div>
 
   <!-- BOTTOM CONTROLS -->
@@ -481,47 +595,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Space Mono',monosp
     <div class="drawer-scroll" id="drawer-scroll"></div>
   </div>
 
-  <!-- PROFILE VIEW -->
-  <div id="profile-screen">
-    <div id="ps-view">
-      <button class="ps-back" id="ps-back">← BACK</button>
-      <div class="ps-photos" id="ps-photos">
-        <div class="ps-photo-main" id="ps-photo-main"></div>
-        <div class="ps-photos-side">
-          <div class="ps-photo-side" id="ps-photo-side1"></div>
-          <div class="ps-photo-side" id="ps-photo-side2"></div>
-        </div>
-        <div class="ps-photo-overlay">
-          <div class="ps-name" id="ps-name"></div>
-          <div class="ps-username" id="ps-username-display"></div>
-          <div class="ps-station-tag" id="ps-station-tag"></div>
-        </div>
-      </div>
-      <div class="ps-body">
-        <div class="ps-avail-label">AVAILABLE</div>
-        <div class="ps-hours" id="ps-hours"></div>
-      </div>
-      <div class="ps-action-bar">
-        <button class="ps-chat-btn" id="ps-chat-btn">MESSAGE →</button>
-      </div>
-    </div>
-    <div id="chat-view">
-      <div class="chat-top-bar">
-        <button class="chat-back" id="chat-back">← PROFILE</button>
-        <div class="chat-av" id="chat-av"></div>
-        <div style="flex:1;">
-          <div class="chat-user-name" id="chat-user-name"></div>
-          <div class="chat-user-sub" id="chat-user-sub"></div>
-        </div>
-      </div>
-      <div class="chat-expiry-note">⚠ messages disappear after 24 hours</div>
-      <div class="chat-messages" id="chat-messages"></div>
-      <div class="chat-input-bar">
-        <textarea class="chat-input" id="chat-input" placeholder="say something..." rows="1"></textarea>
-        <button class="chat-send" id="chat-send">→</button>
-      </div>
-    </div>
-  </div>
+  <!-- profile and chat now live inside #right-panel -->
 
   <!-- MY PROFILE -->
   <div id="my-profile-screen">
@@ -941,43 +1015,16 @@ function makeProfileCard(uid, isFree=true){
       </div>
     </div>
     <span style="font-size:16px;color:${isFree?'rgba(26,10,46,0.2)':'rgba(80,140,200,0.2)'};">›</span>`;
-  card.addEventListener('click',()=>openProfile(uid));
+  card.addEventListener('click',()=>rpOpenProfile(uid));
   return card;
 }
 document.getElementById('close-drawer').addEventListener('click',()=>document.getElementById('drawer').classList.remove('open'));
 document.getElementById('drawer-handle').addEventListener('click',()=>document.getElementById('drawer').classList.remove('open'));
 
-// ── PROFILE VIEW ──────────────────────────────────────────────────
-function openProfile(uid){
-  currentProfileId=uid;
-  const u=USERS[uid];
-  if(!u) return;
-  const st=stationData.find(s=>s.userIds&&s.userIds.includes(uid));
-  // Photos
-  const photos = Array.isArray(u.photo_urls) ? u.photo_urls : (u.photo_url?[u.photo_url]:[]);
-  const mainEl=document.getElementById('ps-photo-main');
-  const side1El=document.getElementById('ps-photo-side1');
-  const side2El=document.getElementById('ps-photo-side2');
-  const gradients=['linear-gradient(135deg,#2D1550,#FF6EB4,#00E5FF)','linear-gradient(135deg,#0a2050,#4466FF,#00E5FF)','linear-gradient(135deg,#2D1550,#C8A0FF,#FF6EB4)'];
-  const gi=Object.keys(USERS).indexOf(uid)%gradients.length;
-  mainEl.style.background=gradients[gi];
-  mainEl.innerHTML=photos[0]?`<img src="${photos[0]}" alt="">`:
-    `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:60px;">${(u.name||'?').charAt(0)}</div>`;
-  side1El.style.background=gradients[(gi+1)%3];
-  side1El.innerHTML=photos[1]?`<img src="${photos[1]}" alt="">`:
-    `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:30px;color:rgba(255,245,250,0.1);">+</div>`;
-  side2El.style.background=gradients[(gi+2)%3];
-  side2El.innerHTML=photos[2]?`<img src="${photos[2]}" alt="">`:
-    `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:30px;color:rgba(255,245,250,0.1);">+</div>`;
-  document.getElementById('ps-name').textContent=(u.name||'')+(u.age?', '+u.age:'');
-  document.getElementById('ps-username-display').textContent=u.username?'@'+u.username:'';
-  document.getElementById('ps-station-tag').textContent=st?'⊙ '+st.name:'';
-  document.getElementById('ps-hours').innerHTML=(u.hours||[]).map(h=>`<div class="ps-hour-chip ${hoursInBlock(currentBlockIndex).includes(h)?'current':''}">${fmtH(h)}</div>`).join('');
-  document.getElementById('profile-screen').classList.remove('in-chat');
-  document.getElementById('profile-screen').classList.add('open');
-}
-document.getElementById('ps-back').addEventListener('click',()=>document.getElementById('profile-screen').classList.remove('open','in-chat'));
-document.getElementById('ps-chat-btn').addEventListener('click',()=>openChat(currentProfileId));
+// ── PROFILE / CHAT — now handled inside right panel ───────────────
+// Legacy stubs kept for any remaining references
+function openProfile(uid){ rpOpenProfile(uid); }
+async function openChat(uid){ await rpOpenChat(uid); }
 
 // ── CHAT ──────────────────────────────────────────────────────────
 async function openChat(uid){
@@ -1090,12 +1137,28 @@ async function sendMessage(){
   if(error){ console.error('send error:', error); return; }
   await loadChatMessages(currentProfileId);
 }
-document.getElementById('chat-send').addEventListener('click',sendMessage);
-document.getElementById('chat-input').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}});
-document.getElementById('chat-input').addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px';});
-document.getElementById('chat-back').addEventListener('click',()=>document.getElementById('profile-screen').classList.remove('in-chat'));
+// old chat event listeners removed — chat now in right panel
 
 // ── RIGHT PANEL ───────────────────────────────────────────────────
+// Panel view: 'list' | 'profile' | 'chat'
+let rpView = 'list';
+
+function setRpView(view){
+  rpView = view;
+  const views = document.getElementById('rp-views');
+  views.classList.remove('show-profile','show-chat');
+  if(view==='profile') views.classList.add('show-profile');
+  if(view==='chat') views.classList.add('show-chat');
+  // Open panel if not already open
+  document.getElementById('right-panel').classList.add('open');
+}
+
+function openRpPanel(){
+  document.getElementById('right-panel').classList.add('open');
+  setRpView('list');
+  switchRpTab(rpTab);
+}
+
 function switchRpTab(tab){
   rpTab=tab;
   document.getElementById('tab-inbox').className='rp-tab'+(tab==='inbox'?' active':'');
@@ -1114,7 +1177,7 @@ function renderRpInbox(){
       return bl-al;
     });
   if(!threads.length){
-    content.innerHTML='<div class="inbox-empty">NO MESSAGES YET<br><br>CLICK A STATION<br>TO START</div>';
+    content.innerHTML='<div class="inbox-empty">NO MESSAGES YET<br><br>CLICK A STATION TO START</div>';
     return;
   }
   threads.forEach(([uid,u])=>{
@@ -1132,7 +1195,7 @@ function renderRpInbox(){
         <div class="it-preview ${u.hasUnread?'unread':''}">${last.mine?'You: ':''}${last.text}</div>
       </div>
       <div class="it-time">${t}</div>`;
-    el.addEventListener('click',()=>{openProfile(uid);setTimeout(()=>openChat(uid),350);});
+    el.addEventListener('click',()=>rpOpenChat(uid));
     content.appendChild(el);
   });
 }
@@ -1163,17 +1226,128 @@ function renderRpPeople(){
           <span class="rp-avail">FREE ${fmtBlock(currentBlockIndex)}</span>
         </div>
       </div>`;
-    el.addEventListener('click',()=>openProfile(uid));
+    el.addEventListener('click',()=>rpOpenProfile(uid));
     content.appendChild(el);
   });
 }
 
+// Open profile inside right panel
+function rpOpenProfile(uid){
+  currentProfileId=uid;
+  const u=USERS[uid];
+  if(!u) return;
+  const st=stationData.find(s=>s.userIds&&s.userIds.includes(uid));
+  const gradients=['linear-gradient(135deg,#2D1550,#FF6EB4,#00E5FF)','linear-gradient(135deg,#0a2050,#4466FF,#00E5FF)','linear-gradient(135deg,#2D1550,#C8A0FF,#FF6EB4)'];
+  const gi=Object.keys(USERS).indexOf(uid)%gradients.length;
+  const photos=Array.isArray(u.photo_urls)?u.photo_urls:(u.photo_url?[u.photo_url]:[]);
+  const mainEl=document.getElementById('rp-photo-main');
+  const s1=document.getElementById('rp-photo-side1');
+  const s2=document.getElementById('rp-photo-side2');
+  mainEl.style.background=gradients[gi];
+  mainEl.innerHTML=photos[0]?`<img src="${photos[0]}" alt="">`:`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:50px;">${(u.name||'?').charAt(0)}</div>`;
+  s1.style.background=gradients[(gi+1)%3];
+  s1.innerHTML=photos[1]?`<img src="${photos[1]}" alt="">`:`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:22px;color:rgba(255,245,250,0.08);">+</div>`;
+  s2.style.background=gradients[(gi+2)%3];
+  s2.innerHTML=photos[2]?`<img src="${photos[2]}" alt="">`:`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:22px;color:rgba(255,245,250,0.08);">+</div>`;
+  document.getElementById('rp-profile-name').textContent=(u.name||u.username||'anonymous')+(u.age?', '+u.age:'');
+  document.getElementById('rp-profile-username').textContent=u.username?'@'+u.username:'';
+  document.getElementById('rp-profile-station').textContent=st?'⊙ '+st.name:'';
+  document.getElementById('rp-hours').innerHTML=(u.hours||[]).map(h=>`<div class="rp-hour-chip ${hoursInBlock(currentBlockIndex).includes(h)?'current':''}">${fmtH(h)}</div>`).join('');
+  setRpView('profile');
+}
+
+// Open chat inside right panel
+async function rpOpenChat(uid){
+  currentProfileId=uid;
+  const u=USERS[uid];
+  if(!u) return;
+  u.hasUnread=false;
+  updateAllDots();
+  updateInboxBadge();
+  const st=stationData.find(s=>s.userIds&&s.userIds.includes(uid));
+  const avHTML=u.photo_url?`<img src="${u.photo_url}" alt="">`:((u.name||'?').charAt(0));
+  document.getElementById('rp-chat-av').innerHTML=avHTML;
+  document.getElementById('rp-chat-name').textContent=u.name||u.username||'anonymous';
+  document.getElementById('rp-chat-sub').textContent=st?st.name:'';
+  setRpView('chat');
+  await rpLoadMessages(uid);
+  setTimeout(()=>document.getElementById('rp-chat-input').focus(),350);
+}
+
+async function rpLoadMessages(uid){
+  const container=document.getElementById('rp-messages');
+  container.innerHTML='<div style="text-align:center;font-family:VT323,monospace;font-size:12px;color:rgba(255,245,250,0.2);padding:12px;letter-spacing:2px;">LOADING...</div>';
+  const matchId=await getOrCreateMatch(uid);
+  if(!matchId){
+    container.innerHTML='<div style="text-align:center;font-family:VT323,monospace;font-size:13px;color:rgba(255,245,250,0.2);letter-spacing:2px;padding:20px 0;">SAY HELLO</div>';
+    return;
+  }
+  if(USERS[uid]) USERS[uid]._matchId=matchId;
+  const cutoff=new Date(Date.now()-24*60*60*1000).toISOString();
+  const {data:msgs,error}=await sb.from('messages').select('*').eq('match_id',matchId).gte('created_at',cutoff).order('created_at',{ascending:true});
+  if(error) console.error('rp load msgs error:',error);
+  container.innerHTML='';
+  if(!msgs||!msgs.length){
+    container.innerHTML='<div style="text-align:center;font-family:VT323,monospace;font-size:13px;color:rgba(255,245,250,0.2);letter-spacing:2px;padding:20px 0;">SAY HELLO</div>';
+    return;
+  }
+  msgs.forEach(m=>{
+    const mine=m.sender_id===currentUser.id;
+    const w=document.createElement('div');
+    w.className='msg '+(mine?'mine':'theirs');
+    const d=new Date(m.created_at);
+    const t=(d.getHours()%12||12)+':'+d.getMinutes().toString().padStart(2,'0')+' '+(d.getHours()<12?'AM':'PM');
+    w.innerHTML=`<div class="msg-bubble">${m.content}</div><div class="msg-time">${t}</div>`;
+    container.appendChild(w);
+  });
+  container.scrollTop=container.scrollHeight;
+}
+
+async function rpSendMessage(){
+  const input=document.getElementById('rp-chat-input');
+  const text=input.value.trim();
+  if(!text||!currentProfileId||!currentUser) return;
+  input.value=''; input.style.height='auto';
+  let matchId=USERS[currentProfileId]?._matchId;
+  if(!matchId) matchId=await getOrCreateMatch(currentProfileId);
+  if(!matchId){ console.error('no match'); return; }
+  if(USERS[currentProfileId]) USERS[currentProfileId]._matchId=matchId;
+  const {error}=await sb.from('messages').insert({match_id:matchId,sender_id:currentUser.id,content:text});
+  if(error){ console.error('send error:',error); return; }
+  // Add to local messages for inbox display
+  if(!USERS[currentProfileId].messages) USERS[currentProfileId].messages=[];
+  USERS[currentProfileId].messages.push({mine:true,text,ts:Date.now()});
+  await rpLoadMessages(currentProfileId);
+  if(rpTab==='inbox') renderRpInbox();
+}
+
 document.getElementById('inbox-btn').addEventListener('click',()=>{
   const panel=document.getElementById('right-panel');
-  if(panel.classList.contains('open')){panel.classList.remove('open');}
-  else{panel.classList.add('open');switchRpTab(rpTab);}
+  if(panel.classList.contains('open')&&rpView==='list'){
+    panel.classList.remove('open');
+  } else {
+    openRpPanel();
+  }
 });
 document.getElementById('rp-close').addEventListener('click',()=>document.getElementById('right-panel').classList.remove('open'));
+document.getElementById('rp-profile-close').addEventListener('click',()=>document.getElementById('right-panel').classList.remove('open'));
+document.getElementById('rp-profile-back').addEventListener('click',()=>setRpView('list'));
+document.getElementById('rp-chat-back').addEventListener('click',()=>{
+  // Go back to profile if we came from profile, otherwise list
+  if(currentProfileId&&rpView==='chat') setRpView('list');
+});
+document.getElementById('rp-msg-btn').addEventListener('click',()=>rpOpenChat(currentProfileId));
+// Click avatar/name in chat header to go to profile
+document.getElementById('rp-chat-av').addEventListener('click',()=>rpOpenProfile(currentProfileId));
+document.getElementById('rp-chat-info').addEventListener('click',()=>rpOpenProfile(currentProfileId));
+document.getElementById('rp-chat-send').addEventListener('click',rpSendMessage);
+document.getElementById('rp-chat-input').addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();rpSendMessage();}
+});
+document.getElementById('rp-chat-input').addEventListener('input',function(){
+  this.style.height='auto';
+  this.style.height=Math.min(this.scrollHeight,80)+'px';
+});
 
 function updateInboxBadge(){
   const has=Object.values(USERS).some(u=>u.hasUnread);
@@ -1399,13 +1573,13 @@ function subscribeRealtime(){
       if(USERS[senderId]){
         USERS[senderId].messages=USERS[senderId].messages||[];
         USERS[senderId].messages.push({mine:false,text:msg.content,ts:new Date(msg.created_at).getTime()});
-        if(currentProfileId!==senderId){
+        if(currentProfileId===senderId && rpView==='chat'){
+          await rpLoadMessages(senderId);
+        } else {
           USERS[senderId].hasUnread=true;
           updateAllDots();updateInboxBadge();
           if(currentStation) renderDrawer(currentStation);
           if(rpTab==='inbox') renderRpInbox();
-        } else {
-          await loadChatMessages(senderId);
         }
       }
     }).subscribe();
