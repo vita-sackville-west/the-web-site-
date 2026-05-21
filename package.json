@@ -1,0 +1,17 @@
+{
+  "name": "the-web-site",
+  "version": "1.0.0",
+  "description": "The Web(Site) - A Vita-inspired interactive map",
+  "type": "module",
+  "scripts": {
+    "dev": "npx serve .",
+    "build": "echo 'No build step required for static site'",
+    "lint": "echo 'No linter configured'"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@vercel/speed-insights": "^1.1.0"
+  }
+}
