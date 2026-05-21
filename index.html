@@ -587,6 +587,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Space Mono',monosp
             <div class="rp-chat-name" id="rp-chat-name"></div>
             <div class="rp-chat-sub" id="rp-chat-sub"></div>
           </div>
+          <button id="rp-delete-chat" title="Delete conversation" style="background:none;border:none;color:rgba(255,245,250,0.25);font-family:'VT323',monospace;font-size:13px;letter-spacing:1px;cursor:pointer;padding:4px 6px;flex-shrink:0;transition:color 0.15s;">DELETE</button>
         </div>
         <div class="rp-expiry-note">⚠ messages disappear after 24 hours</div>
         <div class="rp-messages" id="rp-messages"></div>
@@ -1502,8 +1503,34 @@ document.getElementById('rp-close').addEventListener('click',()=>setRpView('list
 document.getElementById('rp-profile-close').addEventListener('click',()=>setRpView('list'));
 document.getElementById('rp-profile-back').addEventListener('click',()=>setRpView('list'));
 document.getElementById('rp-chat-back').addEventListener('click',()=>{
-  // Go back to profile if we came from profile, otherwise list
   if(currentProfileId&&rpView==='chat') setRpView('list');
+});
+
+document.getElementById('rp-delete-chat').addEventListener('click',async()=>{
+  if(!currentProfileId||!currentUser) return;
+  const u = USERS[currentProfileId];
+  const matchId = u?._matchId;
+  if(!matchId){ setRpView('list'); return; }
+
+  // Confirm
+  const confirmed = confirm('Delete this conversation? Messages will disappear for both of you.');
+  if(!confirmed) return;
+
+  // Delete messages first, then the match
+  await sb.from('messages').delete().eq('match_id', matchId);
+  await sb.from('matches').delete().eq('id', matchId);
+
+  // Clear local state
+  if(USERS[currentProfileId]){
+    USERS[currentProfileId].messages = [];
+    USERS[currentProfileId].hasUnread = false;
+    USERS[currentProfileId]._matchId = null;
+  }
+
+  updateAllDots();
+  updateInboxBadge();
+  setRpView('list');
+  renderRpInbox();
 });
 document.getElementById('rp-msg-btn').addEventListener('click',()=>rpOpenChat(currentProfileId));
 // Click avatar/name in chat header to go to profile
