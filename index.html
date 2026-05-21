@@ -1309,7 +1309,8 @@ async function renderRpInbox(){
     if(!u) continue;
     const last=msgs[0];
     const unread=last.sender_id!==currentUser.id&&!last.seen;
-    if(unread) u.hasUnread=true;
+    // Sync local state with DB truth
+    if(u) u.hasUnread=unread;
     threads.push({uid:otherId,u,last,matchId:match.id,unread});
     if(u) u._matchId=match.id;
   }
