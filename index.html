@@ -16,9 +16,9 @@
 html,body{width:100%;height:100%;overflow:hidden;font-family:'Space Mono',monospace;background:var(--dark);}
 
 /* ── MAP ── */
-#map{position:fixed;inset:0;width:100%;height:100%;z-index:1;}
-#sky-filter{position:fixed;inset:0;z-index:2;pointer-events:none;transition:background 1.5s ease;mix-blend-mode:screen;opacity:0.18;}
-#scanlines{position:fixed;inset:0;z-index:3;pointer-events:none;
+#map{position:fixed;top:0;left:0;right:300px;bottom:0;width:auto;height:100%;z-index:1;}
+#sky-filter{position:fixed;top:0;left:0;right:300px;bottom:0;z-index:2;pointer-events:none;transition:background 1.5s ease;mix-blend-mode:screen;opacity:0.18;}
+#scanlines{position:fixed;top:0;left:0;right:300px;bottom:0;z-index:3;pointer-events:none;
   background-image:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(26,10,46,0.04) 3px,rgba(26,10,46,0.04) 4px);}
 #app-wrap{display:none;position:fixed;inset:0;}
 
@@ -94,12 +94,10 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Space Mono',monosp
 .line-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
 
 /* ── RIGHT PANEL (inbox + profiles) ── */
-#right-panel{position:fixed;top:59px;right:0;bottom:68px;width:320px;
-  background:rgba(26,10,46,0.97);border-left:2px solid var(--pink);
-  z-index:40;transform:translateX(100%);
-  transition:transform 0.35s cubic-bezier(0.16,1,0.3,1);
-  display:flex;flex-direction:column;overflow:hidden;}
-#right-panel.open{transform:translateX(0);}
+#right-panel{position:fixed;top:59px;right:0;bottom:68px;width:300px;
+  background:rgba(26,10,46,0.97);border-left:2px solid rgba(255,110,180,0.3);
+  z-index:40;display:flex;flex-direction:column;overflow:hidden;}
+/* Always visible - no transform needed */
 
 /* Three views slide horizontally inside the panel */
 #rp-views{display:flex;width:300%;height:100%;transition:transform 0.3s cubic-bezier(0.16,1,0.3,1);}
@@ -216,7 +214,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Space Mono',monosp
   font-size:16px;color:rgba(255,245,250,0.15);letter-spacing:2px;line-height:2.2;}
 
 /* ── DRAWER ── */
-#drawer{position:fixed;bottom:68px;left:50%;transform:translateX(-50%) translateY(calc(100% + 80px));
+#drawer{position:fixed;bottom:68px;left:calc(50% - 150px);transform:translateX(-50%) translateY(calc(100% + 80px));
   width:100%;max-width:420px;background:var(--white);
   border-top:3px solid var(--dark);border-left:3px solid var(--dark);border-right:3px solid var(--dark);
   z-index:50;transition:transform 0.35s cubic-bezier(0.16,1,0.3,1);max-height:55vh;display:flex;flex-direction:column;}
@@ -442,6 +440,44 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Space Mono',monosp
 .wt-title{font-family:'VT323',monospace;font-size:20px;color:var(--pink);letter-spacing:2px;margin-bottom:6px;}
 .wt-body{font-family:'VT323',monospace;font-size:14px;color:rgba(255,245,250,0.6);letter-spacing:1px;line-height:1.7;}
 
+/* ── CENTRE PROFILE MODAL ── */
+#profile-modal{position:fixed;top:50%;left:calc(50% - 150px);transform:translate(-50%,-50%) scale(0.95);
+  width:340px;max-height:85vh;background:var(--dark);border:2px solid var(--pink);
+  z-index:90;display:none;flex-direction:column;overflow:hidden;
+  box-shadow:0 0 40px rgba(255,45,120,0.2);
+  transition:transform 0.2s cubic-bezier(0.16,1,0.3,1),opacity 0.2s;opacity:0;}
+#profile-modal.show{display:flex;transform:translate(-50%,-50%) scale(1);opacity:1;}
+#modal-overlay{position:fixed;inset:0;background:rgba(26,10,46,0.5);z-index:89;display:none;backdrop-filter:blur(2px);}
+#modal-overlay.show{display:block;}
+.modal-photos{height:200px;display:flex;gap:3px;flex-shrink:0;position:relative;}
+.modal-photo-main{flex:2;overflow:hidden;background:rgba(255,245,250,0.04);}
+.modal-photo-main img{width:100%;height:100%;object-fit:cover;}
+.modal-photos-side{flex:1;display:flex;flex-direction:column;gap:3px;}
+.modal-photo-side{flex:1;overflow:hidden;background:rgba(255,245,250,0.03);}
+.modal-photo-side img{width:100%;height:100%;object-fit:cover;}
+.modal-overlay-text{position:absolute;bottom:0;left:0;right:0;height:55%;
+  background:linear-gradient(transparent,rgba(26,10,46,0.97));
+  display:flex;flex-direction:column;justify-content:flex-end;padding:10px 14px 8px;}
+.modal-name{font-family:'VT323',monospace;font-size:38px;color:var(--white);letter-spacing:1px;line-height:1;}
+.modal-username{font-family:'VT323',monospace;font-size:14px;color:rgba(255,245,250,0.4);letter-spacing:2px;}
+.modal-station{font-family:'VT323',monospace;font-size:13px;color:var(--cyan);letter-spacing:2px;margin-top:1px;}
+.modal-close{position:absolute;top:10px;right:10px;background:rgba(26,10,46,0.7);border:none;
+  color:rgba(255,245,250,0.6);font-size:16px;width:28px;height:28px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;z-index:2;}
+.modal-close:hover{color:var(--white);}
+.modal-body{padding:12px 14px;overflow-y:auto;flex:1;}
+.modal-avail-label{font-family:'VT323',monospace;font-size:11px;letter-spacing:3px;
+  color:rgba(255,245,250,0.3);margin-bottom:6px;}
+.modal-hours{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:14px;}
+.modal-hour-chip{font-family:'VT323',monospace;font-size:12px;border:1px solid rgba(255,110,180,0.25);
+  color:rgba(255,245,250,0.4);padding:2px 7px;letter-spacing:1px;}
+.modal-hour-chip.current{border-color:var(--pink);color:var(--pink);background:rgba(255,110,180,0.1);}
+.modal-actions{display:flex;gap:8px;padding:10px 14px 14px;flex-shrink:0;}
+.modal-msg-btn{flex:1;background:var(--pink);border:2px solid var(--hot);color:var(--white);
+  font-family:'VT323',monospace;font-size:18px;letter-spacing:3px;padding:10px;cursor:pointer;position:relative;}
+.modal-msg-btn::after{content:'';position:absolute;bottom:-3px;right:-3px;width:100%;height:100%;background:var(--hot);z-index:-1;}
+.modal-msg-btn:hover{background:var(--hot);}
+
 /* Leaflet */
 .leaflet-tile{image-rendering:pixelated!important;image-rendering:crisp-edges!important;}
 .leaflet-container{background:#1A0A2E!important;}
@@ -658,6 +694,31 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Space Mono',monosp
       <br><br>
       Scroll to move through time and see who's free when — send someone a message to connect
     </div>
+  </div>
+</div>
+
+<!-- CENTRE PROFILE MODAL -->
+<div id="modal-overlay"></div>
+<div id="profile-modal">
+  <div class="modal-photos">
+    <div class="modal-photo-main" id="modal-photo-main"></div>
+    <div class="modal-photos-side">
+      <div class="modal-photo-side" id="modal-photo-side1"></div>
+      <div class="modal-photo-side" id="modal-photo-side2"></div>
+    </div>
+    <div class="modal-overlay-text">
+      <div class="modal-name" id="modal-name"></div>
+      <div class="modal-username" id="modal-username"></div>
+      <div class="modal-station" id="modal-station"></div>
+    </div>
+    <button class="modal-close" id="modal-close">✕</button>
+  </div>
+  <div class="modal-body">
+    <div class="modal-avail-label">AVAILABLE</div>
+    <div class="modal-hours" id="modal-hours"></div>
+  </div>
+  <div class="modal-actions">
+    <button class="modal-msg-btn" id="modal-msg-btn">MESSAGE →</button>
   </div>
 </div>
 
@@ -1021,9 +1082,44 @@ function makeProfileCard(uid, isFree=true){
 document.getElementById('close-drawer').addEventListener('click',()=>document.getElementById('drawer').classList.remove('open'));
 document.getElementById('drawer-handle').addEventListener('click',()=>document.getElementById('drawer').classList.remove('open'));
 
-// ── PROFILE / CHAT — now handled inside right panel ───────────────
-// Legacy stubs kept for any remaining references
-function openProfile(uid){ rpOpenProfile(uid); }
+// ── CENTRE MODAL (map clicks) ─────────────────────────────────────
+function openProfileModal(uid){
+  currentProfileId=uid;
+  const u=USERS[uid];
+  if(!u) return;
+  const st=stationData.find(s=>s.userIds&&s.userIds.includes(uid));
+  const gradients=['linear-gradient(135deg,#2D1550,#FF6EB4,#00E5FF)','linear-gradient(135deg,#0a2050,#4466FF,#00E5FF)','linear-gradient(135deg,#2D1550,#C8A0FF,#FF6EB4)'];
+  const gi=Object.keys(USERS).indexOf(uid)%gradients.length;
+  const photos=Array.isArray(u.photo_urls)?u.photo_urls:(u.photo_url?[u.photo_url]:[]);
+  const m=document.getElementById('modal-photo-main');
+  const s1=document.getElementById('modal-photo-side1');
+  const s2=document.getElementById('modal-photo-side2');
+  m.style.background=gradients[gi];
+  m.innerHTML=photos[0]?`<img src="${photos[0]}" alt="">`:`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:56px;">${(u.name||'?').charAt(0)}</div>`;
+  s1.style.background=gradients[(gi+1)%3];
+  s1.innerHTML=photos[1]?`<img src="${photos[1]}" alt="">`:`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:20px;color:rgba(255,245,250,0.08);">+</div>`;
+  s2.style.background=gradients[(gi+2)%3];
+  s2.innerHTML=photos[2]?`<img src="${photos[2]}" alt="">`:`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:20px;color:rgba(255,245,250,0.08);">+</div>`;
+  document.getElementById('modal-name').textContent=(u.name||u.username||'anonymous')+(u.age?', '+u.age:'');
+  document.getElementById('modal-username').textContent=u.username?'@'+u.username:'';
+  document.getElementById('modal-station').textContent=st?'⊙ '+st.name:'';
+  document.getElementById('modal-hours').innerHTML=(u.hours||[]).map(h=>`<div class="modal-hour-chip ${hoursInBlock(currentBlockIndex).includes(h)?'current':''}">${fmtH(h)}</div>`).join('');
+  document.getElementById('profile-modal').classList.add('show');
+  document.getElementById('modal-overlay').classList.add('show');
+}
+function closeProfileModal(){
+  document.getElementById('profile-modal').classList.remove('show');
+  document.getElementById('modal-overlay').classList.remove('show');
+}
+document.getElementById('modal-close').addEventListener('click',closeProfileModal);
+document.getElementById('modal-overlay').addEventListener('click',closeProfileModal);
+document.getElementById('modal-msg-btn').addEventListener('click',()=>{
+  closeProfileModal();
+  rpOpenChat(currentProfileId);
+});
+
+// Legacy stubs
+function openProfile(uid){ openProfileModal(uid); }
 async function openChat(uid){ await rpOpenChat(uid); }
 
 // ── CHAT ──────────────────────────────────────────────────────────
@@ -1154,7 +1250,6 @@ function setRpView(view){
 }
 
 function openRpPanel(){
-  document.getElementById('right-panel').classList.add('open');
   setRpView('list');
   switchRpTab(rpTab);
 }
@@ -1163,41 +1258,80 @@ function switchRpTab(tab){
   rpTab=tab;
   document.getElementById('tab-inbox').className='rp-tab'+(tab==='inbox'?' active':'');
   document.getElementById('tab-people').className='rp-tab'+(tab==='people'?' active':'');
-  if(tab==='inbox') renderRpInbox();
+  if(tab==='inbox') renderRpInbox(); // async, intentional
   else renderRpPeople();
 }
 
-function renderRpInbox(){
+async function renderRpInbox(){
   const content=document.getElementById('rp-content');
+  content.innerHTML='<div style="padding:20px;text-align:center;font-family:VT323,monospace;font-size:13px;color:rgba(255,245,250,0.2);letter-spacing:2px;">LOADING...</div>';
+  if(!currentUser){ content.innerHTML=''; return; }
+
+  // Load all matches for current user from DB (last 24h)
+  const cutoff=new Date(Date.now()-24*60*60*1000).toISOString();
+  const {data:matches}=await sb.from('matches')
+    .select('id,user_a,user_b,created_at')
+    .or(`user_a.eq.${currentUser.id},user_b.eq.${currentUser.id}`)
+    .gte('created_at',cutoff)
+    .order('created_at',{ascending:false});
+
+  if(!matches||!matches.length){
+    content.innerHTML='<div class="inbox-empty">NO MESSAGES YET<br><br>CLICK A STATION TO START</div>';
+    return;
+  }
+
+  // For each match, get the latest message
+  const threads=[];
+  for(const match of matches){
+    const otherId=match.user_a===currentUser.id?match.user_b:match.user_a;
+    const {data:msgs}=await sb.from('messages')
+      .select('content,created_at,sender_id,seen')
+      .eq('match_id',match.id)
+      .gte('created_at',cutoff)
+      .order('created_at',{ascending:false})
+      .limit(1);
+    if(!msgs||!msgs.length) continue;
+    // Ensure USERS has this person
+    if(!USERS[otherId]){
+      const {data:profile}=await sb.from('users').select('id,name,username,age,photo_url,photo_urls').eq('id',otherId).single();
+      if(profile) USERS[otherId]={...profile,hours:[],messages:[],hasUnread:false};
+    }
+    const u=USERS[otherId];
+    if(!u) continue;
+    const last=msgs[0];
+    const unread=last.sender_id!==currentUser.id&&!last.seen;
+    if(unread) u.hasUnread=true;
+    threads.push({uid:otherId,u,last,matchId:match.id,unread});
+    if(u) u._matchId=match.id;
+  }
+
   content.innerHTML='';
-  const threads=Object.entries(USERS).filter(([,u])=>u.messages&&u.messages.length>0)
-    .sort((a,b)=>{
-      const al=a[1].messages[a[1].messages.length-1]?.ts||0;
-      const bl=b[1].messages[b[1].messages.length-1]?.ts||0;
-      return bl-al;
-    });
   if(!threads.length){
     content.innerHTML='<div class="inbox-empty">NO MESSAGES YET<br><br>CLICK A STATION TO START</div>';
     return;
   }
-  threads.forEach(([uid,u])=>{
-    const st=stationData.find(s=>s.userIds&&s.userIds.includes(uid));
-    const last=u.messages[u.messages.length-1];
-    const d=new Date(last.ts);
-    const t=(d.getHours()%12||12)+':'+d.getMinutes().toString().padStart(2,'0');
-    const avHTML=u.photo_url?`<img src="${u.photo_url}" alt="">`:((u.name||'?').charAt(0));
+
+  threads.forEach(({uid,u,last,unread})=>{
+    if(!u) return;
+    const d=new Date(last.created_at);
+    const now=new Date();
+    const diffH=Math.floor((now-d)/3600000);
+    const tStr=diffH<1?'now':diffH<24?diffH+'h ago':d.toLocaleDateString();
+    const avHTML=u.photo_url?`<img src="${u.photo_url}" alt="">`:((u.name||u.username||'?').charAt(0).toUpperCase());
+    const mine=last.sender_id===currentUser.id;
     const el=document.createElement('div');
-    el.className='inbox-thread'+(u.hasUnread?' unread':'');
+    el.className='inbox-thread'+(unread?' unread':'');
     el.innerHTML=`
-      <div class="it-avatar">${avHTML}${u.hasUnread?'<div class="msg-dot"></div>':''}</div>
+      <div class="it-avatar">${avHTML}${unread?'<div class="msg-dot"></div>':''}</div>
       <div class="it-info">
         <div class="it-name">${u.name||u.username||'anonymous'}</div>
-        <div class="it-preview ${u.hasUnread?'unread':''}">${last.mine?'You: ':''}${last.text}</div>
+        <div class="it-preview ${unread?'unread':''}">${mine?'You: ':''}${last.content}</div>
       </div>
-      <div class="it-time">${t}</div>`;
+      <div class="it-time">${tStr}</div>`;
     el.addEventListener('click',()=>rpOpenChat(uid));
     content.appendChild(el);
   });
+  updateInboxBadge();
 }
 
 function renderRpPeople(){
@@ -1261,34 +1395,47 @@ async function rpOpenChat(uid){
   currentProfileId=uid;
   const u=USERS[uid];
   if(!u) return;
+  // Clear unread immediately and visually
   u.hasUnread=false;
   updateAllDots();
   updateInboxBadge();
   const st=stationData.find(s=>s.userIds&&s.userIds.includes(uid));
-  const avHTML=u.photo_url?`<img src="${u.photo_url}" alt="">`:((u.name||'?').charAt(0));
+  const avHTML=u.photo_url?`<img src="${u.photo_url}" alt="">`:((u.name||u.username||'?').charAt(0).toUpperCase());
   document.getElementById('rp-chat-av').innerHTML=avHTML;
   document.getElementById('rp-chat-name').textContent=u.name||u.username||'anonymous';
-  document.getElementById('rp-chat-sub').textContent=st?st.name:'';
+  document.getElementById('rp-chat-sub').textContent=st?'⊙ '+st.name:'';
   setRpView('chat');
   await rpLoadMessages(uid);
-  setTimeout(()=>document.getElementById('rp-chat-input').focus(),350);
+  // Mark messages as seen in DB
+  if(u._matchId){
+    sb.from('messages')
+      .update({seen:true})
+      .eq('match_id',u._matchId)
+      .neq('sender_id',currentUser.id)
+      .eq('seen',false)
+      .then(()=>{}); // fire and forget
+  }
+  setTimeout(()=>document.getElementById('rp-chat-input').focus(),300);
 }
 
 async function rpLoadMessages(uid){
   const container=document.getElementById('rp-messages');
-  container.innerHTML='<div style="text-align:center;font-family:VT323,monospace;font-size:12px;color:rgba(255,245,250,0.2);padding:12px;letter-spacing:2px;">LOADING...</div>';
+  const wasAtBottom=container.scrollHeight-container.scrollTop<=container.clientHeight+40;
   const matchId=await getOrCreateMatch(uid);
   if(!matchId){
-    container.innerHTML='<div style="text-align:center;font-family:VT323,monospace;font-size:13px;color:rgba(255,245,250,0.2);letter-spacing:2px;padding:20px 0;">SAY HELLO</div>';
+    container.innerHTML='<div style="text-align:center;font-family:VT323,monospace;font-size:13px;color:rgba(255,245,250,0.2);letter-spacing:2px;padding:24px 0;">SAY HELLO 👋</div>';
     return;
   }
   if(USERS[uid]) USERS[uid]._matchId=matchId;
   const cutoff=new Date(Date.now()-24*60*60*1000).toISOString();
-  const {data:msgs,error}=await sb.from('messages').select('*').eq('match_id',matchId).gte('created_at',cutoff).order('created_at',{ascending:true});
-  if(error) console.error('rp load msgs error:',error);
+  const {data:msgs,error}=await sb.from('messages')
+    .select('*').eq('match_id',matchId)
+    .gte('created_at',cutoff)
+    .order('created_at',{ascending:true});
+  if(error){ console.error('load msgs:',error); return; }
   container.innerHTML='';
   if(!msgs||!msgs.length){
-    container.innerHTML='<div style="text-align:center;font-family:VT323,monospace;font-size:13px;color:rgba(255,245,250,0.2);letter-spacing:2px;padding:20px 0;">SAY HELLO</div>';
+    container.innerHTML='<div style="text-align:center;font-family:VT323,monospace;font-size:13px;color:rgba(255,245,250,0.2);letter-spacing:2px;padding:24px 0;">SAY HELLO 👋</div>';
     return;
   }
   msgs.forEach(m=>{
@@ -1296,11 +1443,13 @@ async function rpLoadMessages(uid){
     const w=document.createElement('div');
     w.className='msg '+(mine?'mine':'theirs');
     const d=new Date(m.created_at);
-    const t=(d.getHours()%12||12)+':'+d.getMinutes().toString().padStart(2,'0')+' '+(d.getHours()<12?'AM':'PM');
-    w.innerHTML=`<div class="msg-bubble">${m.content}</div><div class="msg-time">${t}</div>`;
+    const t=(d.getHours()%12||12)+':'+d.getMinutes().toString().padStart(2,'0');
+    const ampm=d.getHours()<12?'AM':'PM';
+    w.innerHTML=`<div class="msg-bubble">${m.content}</div><div class="msg-time">${t} ${ampm}</div>`;
     container.appendChild(w);
   });
-  container.scrollTop=container.scrollHeight;
+  // Only scroll to bottom if user was already there
+  if(wasAtBottom||container.children.length<=3) container.scrollTop=container.scrollHeight;
 }
 
 async function rpSendMessage(){
@@ -1308,29 +1457,37 @@ async function rpSendMessage(){
   const text=input.value.trim();
   if(!text||!currentProfileId||!currentUser) return;
   input.value=''; input.style.height='auto';
+  input.focus();
+
+  // Optimistic: show message immediately
+  const container=document.getElementById('rp-messages');
+  const tempEl=document.createElement('div');
+  tempEl.className='msg mine sending';
+  tempEl.innerHTML=`<div class="msg-bubble" style="opacity:0.6;">${text}</div><div class="msg-time">sending...</div>`;
+  const emptySayHello=container.querySelector('div[style*="SAY HELLO"]');
+  if(emptySayHello) emptySayHello.remove();
+  container.appendChild(tempEl);
+  container.scrollTop=container.scrollHeight;
+
   let matchId=USERS[currentProfileId]?._matchId;
   if(!matchId) matchId=await getOrCreateMatch(currentProfileId);
-  if(!matchId){ console.error('no match'); return; }
+  if(!matchId){ tempEl.remove(); console.error('no match'); return; }
   if(USERS[currentProfileId]) USERS[currentProfileId]._matchId=matchId;
+
   const {error}=await sb.from('messages').insert({match_id:matchId,sender_id:currentUser.id,content:text});
-  if(error){ console.error('send error:',error); return; }
-  // Add to local messages for inbox display
-  if(!USERS[currentProfileId].messages) USERS[currentProfileId].messages=[];
-  USERS[currentProfileId].messages.push({mine:true,text,ts:Date.now()});
+  if(error){ tempEl.remove(); console.error('send:',error); return; }
+
+  // Replace optimistic with real
   await rpLoadMessages(currentProfileId);
-  if(rpTab==='inbox') renderRpInbox();
 }
 
 document.getElementById('inbox-btn').addEventListener('click',()=>{
-  const panel=document.getElementById('right-panel');
-  if(panel.classList.contains('open')&&rpView==='list'){
-    panel.classList.remove('open');
-  } else {
-    openRpPanel();
-  }
+  setRpView('list');
+  switchRpTab('inbox');
 });
-document.getElementById('rp-close').addEventListener('click',()=>document.getElementById('right-panel').classList.remove('open'));
-document.getElementById('rp-profile-close').addEventListener('click',()=>document.getElementById('right-panel').classList.remove('open'));
+// Panel is always open - close buttons go to list view instead
+document.getElementById('rp-close').addEventListener('click',()=>setRpView('list'));
+document.getElementById('rp-profile-close').addEventListener('click',()=>setRpView('list'));
 document.getElementById('rp-profile-back').addEventListener('click',()=>setRpView('list'));
 document.getElementById('rp-chat-back').addEventListener('click',()=>{
   // Go back to profile if we came from profile, otherwise list
@@ -1575,11 +1732,15 @@ function subscribeRealtime(){
         USERS[senderId].messages.push({mine:false,text:msg.content,ts:new Date(msg.created_at).getTime()});
         if(currentProfileId===senderId && rpView==='chat'){
           await rpLoadMessages(senderId);
+          // Mark seen immediately since we're looking at it
+          if(USERS[senderId]?._matchId){
+            sb.from('messages').update({seen:true}).eq('match_id',USERS[senderId]._matchId).neq('sender_id',currentUser.id).then(()=>{});
+          }
         } else {
           USERS[senderId].hasUnread=true;
           updateAllDots();updateInboxBadge();
           if(currentStation) renderDrawer(currentStation);
-          if(rpTab==='inbox') renderRpInbox();
+          renderRpInbox(); // always refresh inbox from DB
         }
       }
     }).subscribe();
@@ -1607,7 +1768,7 @@ async function onSignedIn(){
   subscribeRealtime();
   buildMyAvailGrid();
   buildTimeTicks();
-  // Only show onboarding after stations are confirmed loaded
+  renderRpInbox(); // load inbox from DB on sign-in
   if(stationData.length > 0){
     showOnboarding();
   } else {
