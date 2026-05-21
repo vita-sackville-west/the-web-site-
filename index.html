@@ -803,9 +803,20 @@ function updateAllDots(){stationData.forEach(st=>{if(st.marker)refreshMarker(st)
 // ── LOAD STATIONS FROM DB ─────────────────────────────────────────
 async function loadStations() {
   console.log('Loading stations...');
-  const {data, error} = await sb.from('stations').select('*').order('name');
-  if(error){ console.error('stations DB error:', error); return; }
-  if(!data||data.length===0){ console.warn('No stations returned from DB'); return; }
+  // Try up to 3 times in case of timing issues
+  let data = null, error = null;
+  for(let attempt=0; attempt<3; attempt++){
+    const res = await sb.from('stations').select('id,name,lat,lng,line_color').order('name');
+    data = res.data; error = res.error;
+    if(data && data.length > 0) break;
+    console.log('Attempt', attempt+1, 'failed, retrying...');
+    await new Promise(r=>setTimeout(r,500));
+  }
+  if(error){ console.error('stations DB error:', JSON.stringify(error)); return; }
+  if(!data||data.length===0){
+    console.warn('No stations returned after 3 attempts - check RLS policies');
+    return;
+  }
   console.log('Got', data.length, 'stations from DB');
   // Clear any existing markers
   stationData.forEach(st=>{ if(st.marker) map.removeLayer(st.marker); });
@@ -820,7 +831,7 @@ async function loadStations() {
     st.marker=marker;
   });
   buildTimeTicks();
-  console.log('All', stationData.length, 'station markers placed on map');
+  console.log('✓', stationData.length, 'station markers on map');
 }
 
 // ── LOAD USERS/AVAILABILITY FROM DB ──────────────────────────────
@@ -1303,8 +1314,11 @@ function showWelcomeToast(){
 }
 
 // ── REAL-TIME ─────────────────────────────────────────────────────
+let realtimeSubscribed = false;
 function subscribeRealtime(){
-  sb.channel('messages-rt')
+  if(realtimeSubscribed) return;
+  realtimeSubscribed = true;
+  sb.channel('messages-rt-'+Date.now())
     .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages'},async payload=>{
       const msg=payload.new;
       if(msg.sender_id===currentUser?.id) return;
