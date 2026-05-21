@@ -1,0 +1,17 @@
+{
+  "name": "the-web-site",
+  "version": "1.0.0",
+  "description": "The Web(Site) - A retro-styled interactive map application",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@vercel/analytics": "^1.3.1"
+  },
+  "devDependencies": {
+    "vite": "^5.2.0"
+  }
+}
