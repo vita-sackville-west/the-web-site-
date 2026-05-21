@@ -152,7 +152,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Space Mono',monosp
   font-size:16px;color:rgba(255,245,250,0.15);letter-spacing:2px;line-height:2.2;}
 
 /* ── DRAWER ── */
-#drawer{position:fixed;bottom:68px;left:50%;transform:translateX(-50%) translateY(calc(100% + 4px));
+#drawer{position:fixed;bottom:68px;left:50%;transform:translateX(-50%) translateY(calc(100% + 80px));
   width:100%;max-width:420px;background:var(--white);
   border-top:3px solid var(--dark);border-left:3px solid var(--dark);border-right:3px solid var(--dark);
   z-index:50;transition:transform 0.35s cubic-bezier(0.16,1,0.3,1);max-height:55vh;display:flex;flex-direction:column;}
@@ -175,6 +175,14 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Space Mono',monosp
   padding:8px 10px;margin-bottom:8px;background:var(--white);cursor:pointer;transition:all 0.1s;}
 .profile-card:hover{background:rgba(255,110,180,0.06);transform:translateX(2px)}
 .profile-card.has-message{border-color:var(--lime);}
+.profile-card-offline{
+  background:rgba(40,60,100,0.08)!important;
+  border-color:rgba(60,100,160,0.2)!important;
+}
+.profile-card-offline:hover{
+  background:rgba(60,100,180,0.12)!important;
+  transform:translateX(2px);
+}
 .profile-avatar{width:44px;height:44px;flex-shrink:0;border:2px solid var(--dark);
   display:flex;align-items:center;justify-content:center;font-size:20px;position:relative;overflow:hidden;}
 .profile-avatar img{width:100%;height:100%;object-fit:cover;}
@@ -850,6 +858,7 @@ async function loadMapUsers() {
     if(!USERS[u.id]) USERS[u.id]={...u, hours:[], messages:[], hasUnread:false, dist:'?'};
     if(!USERS[u.id].hours.includes(row.hour)) USERS[u.id].hours.push(row.hour);
     const st = stationData.find(s=>s.id===row.station_id);
+    // Add to station regardless of current time block — shown muted if not free now
     if(st&&!st.userIds.includes(u.id)) st.userIds.push(u.id);
   });
   updateAllDots();
@@ -863,37 +872,75 @@ function renderDrawer(st){
   document.getElementById('drawer-time-tag').textContent=fmtBlock(currentBlockIndex);
   const scroll=document.getElementById('drawer-scroll');
   scroll.innerHTML='';
-  const uids = (st.userIds||[]).filter(uid=>{
+
+  const allUids = st.userIds||[];
+  if(!allUids.length){
+    scroll.innerHTML=`<div style="padding:20px;text-align:center;font-family:VT323,monospace;font-size:16px;color:rgba(26,10,46,0.3);letter-spacing:2px;">NO ONE HERE YET</div>`;
+    return;
+  }
+
+  const freeUids = allUids.filter(uid=>{
     const u=USERS[uid];
     return u&&hoursInBlock(currentBlockIndex).some(h=>u.hours&&u.hours.includes(h));
   });
-  if(!uids.length){
-    scroll.innerHTML=`<div style="padding:20px;text-align:center;font-family:VT323,monospace;font-size:16px;color:rgba(26,10,46,0.3);letter-spacing:2px;">NO ONE FREE ${fmtBlock(currentBlockIndex)}</div>`;
-    return;
+  const offlineUids = allUids.filter(uid=>{
+    const u=USERS[uid];
+    return u&&!hoursInBlock(currentBlockIndex).some(h=>u.hours&&u.hours.includes(h));
+  });
+
+  if(freeUids.length){
+    const sec=document.createElement('div');
+    sec.style.cssText='font-family:VT323,monospace;font-size:11px;letter-spacing:3px;color:#FF2D78;margin:8px 0 6px;';
+    sec.textContent='FREE NOW';
+    scroll.appendChild(sec);
+    freeUids.forEach(uid=>scroll.appendChild(makeProfileCard(uid, true)));
   }
-  const sec=document.createElement('div');
-  sec.style.cssText='font-family:VT323,monospace;font-size:12px;letter-spacing:3px;color:#FF2D78;margin:8px 0 6px;';
-  sec.textContent=`FREE ${fmtBlock(currentBlockIndex)}`;
-  scroll.appendChild(sec);
-  uids.forEach(uid=>scroll.appendChild(makeProfileCard(uid)));
+
+  if(offlineUids.length){
+    const sec=document.createElement('div');
+    sec.style.cssText='font-family:VT323,monospace;font-size:11px;letter-spacing:3px;color:rgba(100,140,200,0.4);margin:12px 0 6px;';
+    sec.textContent='AT THIS STATION';
+    scroll.appendChild(sec);
+    offlineUids.forEach(uid=>scroll.appendChild(makeProfileCard(uid, false)));
+  }
 }
-function makeProfileCard(uid){
+function makeProfileCard(uid, isFree=true){
   const u=USERS[uid];
   const card=document.createElement('div');
-  card.className='profile-card'+(u.hasUnread?' has-message':'');
+
+  if(isFree){
+    card.className='profile-card'+(u.hasUnread?' has-message':'');
+  } else {
+    // Offline/not-free styling — muted blue tones
+    card.className='profile-card profile-card-offline';
+  }
+
   const avatarHTML = u.photo_url
     ? `<img src="${u.photo_url}" alt="">`
     : (u.name||u.username||'?').charAt(0).toUpperCase();
+
+  // Work out next free block label for offline users
+  let nextFreeLabel = '';
+  if(!isFree && u.hours && u.hours.length){
+    // Find the next hour from now
+    const nowH = getNowHour();
+    const nextH = u.hours.find(h => h > nowH) ?? u.hours[0];
+    nextFreeLabel = `free ${fmtH(nextH)}`;
+  }
+
   card.innerHTML=`
-    <div class="profile-avatar">${avatarHTML}${u.hasUnread?'<div class="msg-dot"></div>':''}</div>
+    <div class="profile-avatar" style="${isFree?'':'opacity:0.5;border-color:rgba(80,120,180,0.3);'}">${avatarHTML}${u.hasUnread?'<div class="msg-dot"></div>':''}</div>
     <div class="profile-info">
-      <div class="profile-name">${u.name||u.username||'anonymous'}</div>
+      <div class="profile-name" style="${isFree?'':'color:rgba(80,140,200,0.6);'}">${u.name||u.username||'anonymous'}</div>
       <div class="profile-meta">
         ${u.hasUnread?'<span style="font-family:VT323,monospace;font-size:11px;color:var(--lime);">NEW MSG</span>':''}
-        <span class="avail-pill">FREE NOW</span>
+        ${isFree
+          ? '<span class="avail-pill">FREE NOW</span>'
+          : `<span style="font-family:VT323,monospace;font-size:11px;color:rgba(80,140,200,0.45);">${nextFreeLabel}</span>`
+        }
       </div>
     </div>
-    <span style="font-size:16px;color:rgba(26,10,46,0.2);">›</span>`;
+    <span style="font-size:16px;color:${isFree?'rgba(26,10,46,0.2)':'rgba(80,140,200,0.2)'};">›</span>`;
   card.addEventListener('click',()=>openProfile(uid));
   return card;
 }
@@ -951,38 +998,62 @@ async function openChat(uid){
   setTimeout(()=>document.getElementById('chat-input').focus(),400);
 }
 
-async function loadChatMessages(uid){
-  if(!currentUser) return;
-  // Find match between currentUser and uid
-  const {data:match} = await sb.from('matches')
+async function getOrCreateMatch(uid){
+  if(!currentUser||!uid) return null;
+  // Use a DB function to safely get or create a match (avoids RLS issues with .or())
+  // First try to find existing match via two separate queries
+  const idA = currentUser.id < uid ? currentUser.id : uid;
+  const idB = currentUser.id < uid ? uid : currentUser.id;
+
+  const {data:existing} = await sb.from('matches')
     .select('id')
-    .or(`and(user_a.eq.${currentUser.id},user_b.eq.${uid}),and(user_a.eq.${uid},user_b.eq.${currentUser.id})`)
+    .eq('user_a', idA)
+    .eq('user_b', idB)
     .order('created_at',{ascending:false})
     .limit(1)
-    .single();
+    .maybeSingle();
+
+  if(existing) return existing.id;
+
+  // Create new match
+  const today = new Date().toISOString().split('T')[0];
+  const {data:created, error} = await sb.from('matches').insert({
+    user_a: idA,
+    user_b: idB,
+    hour: getBlockStartHour(currentBlockIndex),
+    date: today
+  }).select('id').single();
+
+  if(error){ console.error('match create error:', error); return null; }
+  return created?.id || null;
+}
+
+async function loadChatMessages(uid){
+  if(!currentUser) return;
   const container=document.getElementById('chat-messages');
-  container.innerHTML='';
-  if(!match){
-    const hint=document.createElement('div');
-    hint.style.cssText='text-align:center;font-family:VT323,monospace;font-size:14px;color:rgba(255,245,250,0.2);letter-spacing:2px;padding:24px 0;';
-    hint.textContent='SAY HELLO';
-    container.appendChild(hint);
+  container.innerHTML='<div style="text-align:center;font-family:VT323,monospace;font-size:13px;color:rgba(255,245,250,0.2);padding:16px;letter-spacing:2px;">LOADING...</div>';
+
+  const matchId = await getOrCreateMatch(uid);
+  if(!matchId){
+    container.innerHTML='<div style="text-align:center;font-family:VT323,monospace;font-size:14px;color:rgba(255,245,250,0.2);letter-spacing:2px;padding:24px 0;">SAY HELLO</div>';
     return;
   }
-  // Store match id on user for sending
-  USERS[uid]._matchId=match.id;
+  // Cache matchId
+  if(USERS[uid]) USERS[uid]._matchId = matchId;
+
   // Load messages (only last 24h)
-  const cutoff=new Date(Date.now()-24*60*60*1000).toISOString();
-  const {data:msgs} = await sb.from('messages')
+  const cutoff = new Date(Date.now()-24*60*60*1000).toISOString();
+  const {data:msgs, error:msgErr} = await sb.from('messages')
     .select('*')
-    .eq('match_id',match.id)
-    .gte('created_at',cutoff)
+    .eq('match_id', matchId)
+    .gte('created_at', cutoff)
     .order('created_at',{ascending:true});
+
+  if(msgErr) console.error('messages load error:', msgErr);
+
+  container.innerHTML='';
   if(!msgs||!msgs.length){
-    const hint=document.createElement('div');
-    hint.style.cssText='text-align:center;font-family:VT323,monospace;font-size:14px;color:rgba(255,245,250,0.2);letter-spacing:2px;padding:24px 0;';
-    hint.textContent='SAY HELLO';
-    container.appendChild(hint);
+    container.innerHTML='<div style="text-align:center;font-family:VT323,monospace;font-size:14px;color:rgba(255,245,250,0.2);letter-spacing:2px;padding:24px 0;">SAY HELLO</div>';
     return;
   }
   msgs.forEach(m=>{
@@ -992,7 +1063,7 @@ async function loadChatMessages(uid){
     const d=new Date(m.created_at);
     const t=(d.getHours()%12||12)+':'+d.getMinutes().toString().padStart(2,'0')+' '+(d.getHours()<12?'AM':'PM');
     const expiry=new Date(new Date(m.created_at).getTime()+24*60*60*1000);
-    const expiryStr=`expires ${(expiry.getHours()%12||12)}:${expiry.getMinutes().toString().padStart(2,'0')} ${expiry.getHours()<12?'AM':'PM'}`;
+    const expiryStr='expires '+((expiry.getHours()%12)||12)+':'+expiry.getMinutes().toString().padStart(2,'0')+' '+(expiry.getHours()<12?'AM':'PM');
     w.innerHTML=`<div class="msg-bubble">${m.content}</div><div class="msg-time">${t}</div><div class="msg-expiry">${expiryStr}</div>`;
     container.appendChild(w);
   });
@@ -1004,20 +1075,19 @@ async function sendMessage(){
   const text=input.value.trim();
   if(!text||!currentProfileId||!currentUser) return;
   input.value=''; input.style.height='auto';
-  // Get or create match
-  let matchId=USERS[currentProfileId]?._matchId;
-  if(!matchId){
-    // Create match
-    const today=new Date().toISOString().split('T')[0];
-    const {data:m} = await sb.from('matches').insert({
-      user_a:currentUser.id,user_b:currentProfileId,
-      hour:getBlockStartHour(currentBlockIndex),date:today
-    }).select().single();
-    if(!m) return;
-    matchId=m.id;
-    if(USERS[currentProfileId]) USERS[currentProfileId]._matchId=matchId;
-  }
-  await sb.from('messages').insert({match_id:matchId,sender_id:currentUser.id,content:text});
+
+  // Get cached matchId or create
+  let matchId = USERS[currentProfileId]?._matchId;
+  if(!matchId) matchId = await getOrCreateMatch(currentProfileId);
+  if(!matchId){ console.error('Could not get/create match'); return; }
+  if(USERS[currentProfileId]) USERS[currentProfileId]._matchId = matchId;
+
+  const {error} = await sb.from('messages').insert({
+    match_id: matchId,
+    sender_id: currentUser.id,
+    content: text
+  });
+  if(error){ console.error('send error:', error); return; }
   await loadChatMessages(currentProfileId);
 }
 document.getElementById('chat-send').addEventListener('click',sendMessage);
