@@ -802,8 +802,13 @@ function updateAllDots(){stationData.forEach(st=>{if(st.marker)refreshMarker(st)
 
 // ── LOAD STATIONS FROM DB ─────────────────────────────────────────
 async function loadStations() {
+  console.log('Loading stations...');
   const {data, error} = await sb.from('stations').select('*').order('name');
-  if(error||!data){ console.error('stations error', error); return; }
+  if(error){ console.error('stations DB error:', error); return; }
+  if(!data||data.length===0){ console.warn('No stations returned from DB'); return; }
+  console.log('Got', data.length, 'stations from DB');
+  // Clear any existing markers
+  stationData.forEach(st=>{ if(st.marker) map.removeLayer(st.marker); });
   stationData = data.map(s=>({...s, userIds:[], tagOpen:false, marker:null}));
   stationData.forEach(st=>{
     const icon=L.divIcon({html:makeDotHTML(st),className:'',iconSize:[10,10],iconAnchor:[5,5]});
@@ -815,7 +820,7 @@ async function loadStations() {
     st.marker=marker;
   });
   buildTimeTicks();
-  console.log('Stations loaded:', stationData.length);
+  console.log('All', stationData.length, 'station markers placed on map');
 }
 
 // ── LOAD USERS/AVAILABILITY FROM DB ──────────────────────────────
@@ -1336,14 +1341,19 @@ async function onSignedIn(){
   document.getElementById('auth-screen').style.display='none';
   document.getElementById('app-wrap').style.display='block';
   setTimeout(()=>map.invalidateSize(),150);
+  // Load stations FIRST and wait for completion before anything else
   await loadStations();
   await loadProfile();
   await loadMapUsers();
   subscribeRealtime();
   buildMyAvailGrid();
   buildTimeTicks();
-  // Show onboarding every login — user can skip
-  setTimeout(()=>showOnboarding(),700);
+  // Only show onboarding after stations are confirmed loaded
+  if(stationData.length > 0){
+    showOnboarding();
+  } else {
+    console.warn('Stations not loaded, skipping onboarding');
+  }
 }
 
 function showAuth(){
