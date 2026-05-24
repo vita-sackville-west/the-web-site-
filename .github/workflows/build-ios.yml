@@ -27,26 +27,11 @@ jobs:
         with:
           xcode-version: latest-stable
 
-      - name: Install CocoaPods and setup workspace
-        run: |
-          cd ios/App
-          gem install cocoapods
-          pod init
-          cat > Podfile << 'PODEOF'
-          platform :ios, '16.0'
-          use_frameworks!
-          target 'App' do
-            pod 'CapacitorFirebaseMessaging', :path => '../../node_modules/@capacitor-firebase/messaging'
-            pod 'CapacitorPushNotifications', :path => '../../node_modules/@capacitor/push-notifications'
-          end
-          PODEOF
-          pod install --repo-update
-
-      - name: Build iOS (unsigned)
+      - name: Build iOS using xcodeproj (no CocoaPods)
         run: |
           cd ios/App
           xcodebuild \
-            -workspace App.xcworkspace \
+            -project App.xcodeproj \
             -scheme App \
             -configuration Release \
             -destination 'generic/platform=iOS' \
