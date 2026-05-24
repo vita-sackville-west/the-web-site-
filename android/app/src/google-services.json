@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "811684364400",
+    "project_id": "thewebsite-d9616",
+    "storage_bucket": "thewebsite-d9616.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:811684364400:android:832f985258b6c080f1f4b5",
+        "android_client_info": {
+          "package_name": "com.thewebsite.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBNSffkfHDG2m31sJ6gzkNiMTIDJ_YVJew"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
