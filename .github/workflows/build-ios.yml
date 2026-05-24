@@ -22,7 +22,7 @@ jobs:
           npm install @capacitor/cli @capacitor/core @capacitor/ios @capacitor/push-notifications @capacitor-firebase/messaging
           
       - name: Sync Capacitor iOS
-        run: npx cap sync ios
+        run: ./node_modules/.bin/cap sync ios
 
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
