@@ -539,6 +539,25 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Space Mono',monosp
 .modal-msg-btn::after{content:'';position:absolute;bottom:-3px;right:-3px;width:100%;height:100%;background:var(--hot);z-index:-1;}
 .modal-msg-btn:hover{background:var(--hot);}
 
+/* ── BLIP ── */
+.blip-btn{background:transparent;border:1px solid rgba(0,229,255,0.4);color:rgba(0,229,255,0.7);
+  font-size:18px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;border-radius:4px;transition:all 0.2s;position:relative;}
+.blip-btn:hover{background:rgba(0,229,255,0.1);border-color:var(--cyan);}
+.blip-btn.sent{border-color:var(--cyan);color:var(--cyan);animation:blip-pulse 1s ease-out;}
+.blip-btn svg{width:20px;height:20px;}
+@keyframes blip-pulse{
+  0%{box-shadow:0 0 0 0 rgba(0,229,255,0.6);}
+  70%{box-shadow:0 0 0 12px rgba(0,229,255,0);}
+  100%{box-shadow:0 0 0 0 rgba(0,229,255,0);}
+}
+.blip-toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);
+  background:rgba(0,229,255,0.15);border:1px solid var(--cyan);
+  color:var(--cyan);font-family:'VT323',monospace;font-size:16px;letter-spacing:2px;
+  padding:8px 20px;z-index:200;opacity:0;transition:opacity 0.4s;pointer-events:none;
+  white-space:nowrap;}
+.blip-toast.show{opacity:1;}
+
 /* Leaflet */
 .leaflet-tile{image-rendering:pixelated!important;image-rendering:crisp-edges!important;}
 .leaflet-container{background:#1A0A2E!important;}
@@ -639,14 +658,25 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Space Mono',monosp
           </div>
         </div>
         <div class="rp-profile-body">
+          <div id="rp-profile-details" style="margin-bottom:10px;font-family:'VT323',monospace;font-size:14px;color:rgba(255,245,250,0.5);letter-spacing:1px;line-height:2;"></div>
           <div class="rp-avail-label">AVAILABLE</div>
           <div class="rp-hours" id="rp-hours"></div>
         </div>
         <div style="display:flex;gap:6px;margin:0 14px 6px;flex-shrink:0;">
-          <button id="rp-block-btn" style="flex:1;background:transparent;border:1px solid rgba(255,165,0,0.35);color:rgba(255,165,0,0.6);font-family:'VT323',monospace;font-size:13px;letter-spacing:1px;padding:9px;cursor:pointer;">BLOCK</button>
-          <button id="rp-report-btn" style="flex:1;background:transparent;border:1px solid rgba(255,45,120,0.35);color:rgba(255,45,120,0.6);font-family:'VT323',monospace;font-size:13px;letter-spacing:1px;padding:9px;cursor:pointer;">⚑ REPORT</button>
+          <button id="rp-blip-btn" class="blip-btn" title="Blip" style="flex:0 0 44px;height:44px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/>
+              <circle cx="12" cy="12" r="5" stroke-dasharray="2 2" opacity="0.6"/>
+              <circle cx="12" cy="12" r="9" stroke-dasharray="1 3" opacity="0.3"/>
+              <line x1="12" y1="12" x2="19" y2="5" stroke-width="1" opacity="0.5"/>
+            </svg>
+          </button>
+          <button class="rp-msg-btn" id="rp-msg-btn" style="flex:1;margin:0;">MESSAGE →</button>
         </div>
-        <button class="rp-msg-btn" id="rp-msg-btn">MESSAGE →</button>
+        <div style="display:flex;gap:6px;margin:0 14px 10px;flex-shrink:0;">
+          <button id="rp-block-btn" style="flex:1;background:transparent;border:1px solid rgba(255,165,0,0.35);color:rgba(255,165,0,0.6);font-family:'VT323',monospace;font-size:13px;letter-spacing:1px;padding:8px;cursor:pointer;">BLOCK</button>
+          <button id="rp-report-btn" style="flex:1;background:transparent;border:1px solid rgba(255,45,120,0.35);color:rgba(255,45,120,0.6);font-family:'VT323',monospace;font-size:13px;letter-spacing:1px;padding:8px;cursor:pointer;">⚑ REPORT</button>
+        </div>
       </div>
 
       <!-- VIEW 2: CHAT -->
@@ -773,6 +803,9 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Space Mono',monosp
     </div>
   </div>
 
+  <!-- BLIP TOAST -->
+  <div class="blip-toast" id="blip-toast"></div>
+
   <!-- WELCOME TOAST -->
   <div id="welcome-toast">
     <div class="wt-title">Welcome to The Web(Site)</div>
@@ -805,8 +838,16 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Space Mono',monosp
     <div class="modal-hours" id="modal-hours"></div>
   </div>
   <div class="modal-actions">
-    <button class="modal-msg-btn" id="modal-msg-btn">MESSAGE →</button>
-<button id="modal-block-btn" style="background:transparent;border:2px solid rgba(255,165,0,0.3);color:rgba(255,165,0,0.5);font-family:'VT323',monospace;font-size:13px;letter-spacing:1px;padding:10px 10px;cursor:pointer;white-space:nowrap;">BLOCK</button>
+    <button id="modal-blip-btn" class="blip-btn" title="Blip" style="width:44px;height:44px;flex-shrink:0;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/>
+        <circle cx="12" cy="12" r="5" stroke-dasharray="2 2" opacity="0.6"/>
+        <circle cx="12" cy="12" r="9" stroke-dasharray="1 3" opacity="0.3"/>
+        <line x1="12" y1="12" x2="19" y2="5" stroke-width="1" opacity="0.5"/>
+      </svg>
+    </button>
+    <button class="modal-msg-btn" id="modal-msg-btn" style="flex:1;">MESSAGE →</button>
+    <button id="modal-block-btn" style="background:transparent;border:2px solid rgba(255,165,0,0.3);color:rgba(255,165,0,0.5);font-family:'VT323',monospace;font-size:13px;letter-spacing:1px;padding:10px 10px;cursor:pointer;white-space:nowrap;">BLOCK</button>
     <button id="modal-report-btn" style="background:transparent;border:2px solid rgba(255,45,120,0.3);color:rgba(255,45,120,0.5);font-family:'VT323',monospace;font-size:14px;letter-spacing:1px;padding:10px 12px;cursor:pointer;transition:all 0.15s;white-space:nowrap;">⚑ REPORT</button>
   </div>
 </div>
@@ -1656,6 +1697,14 @@ function rpOpenProfile(uid){
   document.getElementById('rp-profile-username').textContent=u.username?'@'+u.username:'';
   document.getElementById('rp-profile-station').textContent=st?'@ '+st.name:'';
   document.getElementById('rp-hours').innerHTML=(u.hours||[]).map(h=>`<div class="rp-hour-chip ${hoursInBlock(currentBlockIndex).includes(h)?'current':''}">${fmtH(h)}</div>`).join('');
+  
+  // Build details line
+  const details = [];
+  if(u.age) details.push(u.age + ' yrs');
+  if(u.pronouns) details.push(u.pronouns);
+  if(st) details.push('@ ' + st.name);
+  document.getElementById('rp-profile-details').innerHTML = details.map(d=>`<span style="margin-right:12px;">${d}</span>`).join('');
+  
   setRpView('profile');
 }
 
@@ -1705,12 +1754,18 @@ async function rpLoadMessages(uid){
   msgs.forEach(m=>{
     const mine=m.sender_id===currentUser.id;
     const w=document.createElement('div');
-    w.className='msg '+(mine?'mine':'theirs');
     const d=new Date(m.created_at);
     const now=new Date();
     const diffM=Math.floor((now-d)/60000);
     const tStr=diffM<1?'just now':diffM<60?diffM+'m ago':diffM<1440?Math.floor(diffM/60)+'h ago':(d.getHours()%12||12)+':'+(d.getMinutes().toString().padStart(2,'0'))+' '+(d.getHours()<12?'AM':'PM');
-    w.innerHTML=`<div class="msg-bubble">${m.content}</div><div class="msg-time">${tStr}</div>`;
+    // Special blip rendering
+    if(m.content==='[BLIP]'){
+      w.style.cssText='text-align:center;padding:6px 0;font-family:VT323,monospace;font-size:13px;color:rgba(0,229,255,0.5);letter-spacing:2px;';
+      w.innerHTML=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(0,229,255,0.5)" stroke-width="1.5" style="vertical-align:middle;margin-right:4px;"><circle cx="12" cy="12" r="2" fill="rgba(0,229,255,0.5)" stroke="none"/><circle cx="12" cy="12" r="5" stroke-dasharray="2 2"/><circle cx="12" cy="12" r="9" stroke-dasharray="1 3" opacity="0.5"/></svg>${mine?'you blipped':'blipped you'} &bull; ${tStr}`;
+    } else {
+      w.className='msg '+(mine?'mine':'theirs');
+      w.innerHTML=`<div class="msg-bubble">${m.content}</div><div class="msg-time">${tStr}</div>`;
+    }
     container.appendChild(w);
   });
   if(wasAtBottom||container.children.length<=3) container.scrollTop=container.scrollHeight;
@@ -1861,6 +1916,77 @@ function showRfModal(mode,reportedUid=null,reportedName=null){
 function closeRfModal(){document.getElementById('rf-overlay').style.display='none';document.getElementById('rf-modal').style.display='none';}
 document.getElementById('rf-close').addEventListener('click',closeRfModal);
 document.getElementById('rf-overlay').addEventListener('click',closeRfModal);
+
+// ── BLIP ──────────────────────────────────────────────────────────
+// A blip is a gentle tap — sends a notification without a message
+// Stored in DB, shows in chat as a system note
+
+// Generate sonar blip sound using Web Audio API
+function playBlipSound(){
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    // First ping — high frequency
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.connect(gain1);
+    gain1.connect(ctx.destination);
+    osc1.frequency.setValueAtTime(1200, ctx.currentTime);
+    osc1.frequency.exponentialRampToValueAtTime(400, ctx.currentTime + 0.3);
+    gain1.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+    osc1.start(ctx.currentTime);
+    osc1.stop(ctx.currentTime + 0.3);
+
+    // Echo ping — quieter, delayed
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+    osc2.frequency.setValueAtTime(900, ctx.currentTime + 0.4);
+    osc2.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.65);
+    gain2.gain.setValueAtTime(0.12, ctx.currentTime + 0.4);
+    gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.65);
+    osc2.start(ctx.currentTime + 0.4);
+    osc2.stop(ctx.currentTime + 0.65);
+  } catch(e) {
+    console.log('Audio not available:', e);
+  }
+}
+
+async function sendBlip(uid){
+  if(!currentUser || !uid) return;
+  const u = USERS[uid];
+  const name = u?.name || u?.username || 'someone';
+
+  // Create or get match, then send a special blip message
+  const matchId = await getOrCreateMatch(uid);
+  if(!matchId) return;
+
+  const {error} = await sb.from('messages').insert({
+    match_id: matchId,
+    sender_id: currentUser.id,
+    content: '[BLIP]'
+  });
+
+  if(error){ console.error('blip error:', error); return; }
+
+  // Play sonar sound
+  playBlipSound();
+
+  // Show toast
+  const toast = document.getElementById('blip-toast');
+  toast.textContent = 'BLIP SENT TO ' + name.toUpperCase();
+  toast.classList.add('show');
+  setTimeout(()=>toast.classList.remove('show'), 2500);
+
+  // Animate button
+  const btns = document.querySelectorAll('.blip-btn');
+  btns.forEach(b=>{ b.classList.add('sent'); setTimeout(()=>b.classList.remove('sent'),1000); });
+}
+
+document.getElementById('rp-blip-btn').addEventListener('click', ()=>sendBlip(currentProfileId));
+document.getElementById('modal-blip-btn').addEventListener('click', ()=>{ sendBlip(currentProfileId); closeProfileModal(); });
 
 // ── BLOCK ─────────────────────────────────────────────────────────
 let blockedIds = new Set();
@@ -2194,6 +2320,8 @@ function subscribeRealtime(){
       if(USERS[senderId]){
         USERS[senderId].messages=USERS[senderId].messages||[];
         USERS[senderId].messages.push({mine:false,text:msg.content,ts:new Date(msg.created_at).getTime()});
+        const isBlip=msg.content==='[BLIP]';
+        if(isBlip) playBlipSound();
         if(currentProfileId===senderId&&rpView==='chat'){
           await rpLoadMessages(senderId);
           if(USERS[senderId]?._matchId) sb.from('messages').update({seen:true}).eq('match_id',USERS[senderId]._matchId).neq('sender_id',currentUser.id).then(()=>{});
@@ -2315,4 +2443,3 @@ initAuth();
 </script>
 </body>
 </html>
- 
