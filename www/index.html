@@ -633,9 +633,21 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Space Mono',monosp
           <button class="rp-tab" id="tab-people" onclick="switchRpTab('people')">PEOPLE</button>
         </div>
         <div class="rp-content" id="rp-content"></div>
-        <div style="display:flex;gap:6px;padding:10px 12px 14px;border-top:1px solid rgba(255,245,250,0.06);flex-shrink:0;background:#110820;">
-          <button id="feedback-btn" style="flex:1;background:transparent;border:1px solid rgba(0,229,255,0.3);color:rgba(0,229,255,0.6);font-family:'VT323',monospace;font-size:12px;letter-spacing:1px;padding:8px 4px;cursor:pointer;transition:all 0.15s;">FEEDBACK</button>
-          <button id="report-btn" style="flex:1;background:transparent;border:1px solid rgba(255,45,120,0.3);color:rgba(255,45,120,0.6);font-family:'VT323',monospace;font-size:12px;letter-spacing:1px;padding:8px 4px;cursor:pointer;transition:all 0.15s;">⚑ REPORT</button>
+        <div id="panel-bottom-bar" style="flex-shrink:0;border-top:1px solid rgba(255,245,250,0.06);background:#110820;">
+          <!-- Feedback/Report buttons -->
+          <div style="display:flex;gap:6px;padding:8px 12px 6px;">
+            <button id="feedback-btn" style="flex:1;background:transparent;border:1px solid rgba(0,229,255,0.3);color:rgba(0,229,255,0.6);font-family:'VT323',monospace;font-size:12px;letter-spacing:1px;padding:8px 4px;cursor:pointer;transition:all 0.15s;">FEEDBACK</button>
+            <button id="report-btn" style="flex:1;background:transparent;border:1px solid rgba(255,45,120,0.3);color:rgba(255,45,120,0.6);font-family:'VT323',monospace;font-size:12px;letter-spacing:1px;padding:8px 4px;cursor:pointer;transition:all 0.15s;">⚑ REPORT</button>
+          </div>
+          <!-- Time scrubber — only shown on People tab on mobile -->
+          <div id="panel-time-scrubber" style="display:none;padding:4px 12px 10px;">
+            <div class="ctrl-label" style="font-size:10px;margin-bottom:2px;">TIME</div>
+            <div class="ctrl-track" id="panel-time-track">
+              <div class="ctrl-track-bg"></div>
+              <div class="time-fill" id="panel-time-fill"></div>
+              <div class="time-thumb" id="panel-time-thumb"></div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1052,6 +1064,51 @@ ts.textContent='.leaflet-tile-container img{image-rendering:pixelated!important;
 document.head.appendChild(ts);
 
 //  BUILD TIME SCRUBBER TICKS 
+// ── PANEL TIME SCRUBBER (mobile people tab) ──────────────────────
+function initPanelTimeScrubber(){
+  const track = document.getElementById('panel-time-track');
+  const thumb = document.getElementById('panel-time-thumb');
+  const fill  = document.getElementById('panel-time-fill');
+  if(!track || !thumb) return;
+
+  function updatePanelThumb(){
+    const pct = currentBlockIndex / 11;
+    thumb.style.left = (pct * 100) + '%';
+    fill.style.width = (pct * 100) + '%';
+  }
+  updatePanelThumb();
+
+  let dragging = false;
+  function panelScrub(e){
+    const rect = track.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    const newBlock = Math.round(ratio * 11);
+    if(newBlock !== currentBlockIndex){
+      currentBlockIndex = newBlock;
+      updatePanelThumb();
+      // Sync main scrubber too
+      const mainThumb = document.getElementById('time-thumb');
+      const mainFill = document.getElementById('time-fill');
+      if(mainThumb) mainThumb.style.left = (ratio*100)+'%';
+      if(mainFill) mainFill.style.width = (ratio*100)+'%';
+      loadMapUsers();
+    }
+  }
+
+  track.addEventListener('mousedown', e=>{dragging=true; panelScrub(e);});
+  track.addEventListener('touchstart', e=>{dragging=true; panelScrub(e);}, {passive:true});
+  document.addEventListener('mousemove', e=>{ if(dragging) panelScrub(e); });
+  document.addEventListener('touchmove', e=>{ if(dragging) panelScrub(e); }, {passive:true});
+  document.addEventListener('mouseup', ()=>dragging=false);
+  document.addEventListener('touchend', ()=>dragging=false);
+
+  // Keep in sync when main scrubber moves
+  const origLoad = loadMapUsers;
+  // Update panel thumb whenever block changes
+  const observer = new MutationObserver(updatePanelThumb);
+}
+
 // ── STATION SEARCH ───────────────────────────────────────────────
 const searchInput = document.getElementById('station-search-input');
 const searchResults = document.getElementById('station-search-results');
@@ -1540,7 +1597,11 @@ function switchRpTab(tab){
   rpTab=tab;
   document.getElementById('tab-inbox').className='rp-tab'+(tab==='inbox'?' active':'');
   document.getElementById('tab-people').className='rp-tab'+(tab==='people'?' active':'');
-  if(tab==='inbox') renderRpInbox(); // async, intentional
+  // Show time scrubber only on people tab on mobile
+  const isMobile = window.innerWidth <= 700;
+  const scrubber = document.getElementById('panel-time-scrubber');
+  if(scrubber) scrubber.style.display = (tab==='people' && isMobile) ? 'block' : 'none';
+  if(tab==='inbox') renderRpInbox();
   else renderRpPeople();
 }
 
@@ -2369,7 +2430,8 @@ async function onSignedIn(){
   buildMyAvailGrid();
   buildTimeTicks();
   renderRpInbox();
-  setupPushNotifications(); // register device for push notifications
+  setupPushNotifications();
+  initPanelTimeScrubber();
   if(stationData.length>0) showOnboarding();
 }
 
