@@ -1415,7 +1415,7 @@ function makeProfileCard(uid, isFree=true){
   card.addEventListener('click',()=>rpOpenProfile(uid));
   return card;
 }
-document.getElementById('close-drawer').addEventListener('click',()=>document.getElementById('drawer').classList.remove('open'));
+document.getElementById('close-drawer')?.addEventListener('click',()=>document.getElementById('drawer').classList.remove('open'));
 document.getElementById('drawer-handle').addEventListener('click',()=>document.getElementById('drawer').classList.remove('open'));
 
 //  CENTRE MODAL (map clicks) 
@@ -1451,7 +1451,7 @@ function closeProfileModal(){
   document.getElementById('profile-modal').classList.remove('show');
   document.getElementById('modal-overlay').classList.remove('show');
 }
-document.getElementById('modal-close').addEventListener('click',closeProfileModal);
+document.getElementById('modal-close')?.addEventListener('click',closeProfileModal);
 document.getElementById('modal-overlay').addEventListener('click',closeProfileModal);
 document.getElementById('modal-msg-btn').addEventListener('click',()=>{
   closeProfileModal();
@@ -1863,8 +1863,8 @@ async function rpSendMessage(){
 
 //  RIGHT PANEL BUTTONS 
 document.getElementById('inbox-btn').addEventListener('click',()=>{setRpView('list');switchRpTab('inbox');});
-document.getElementById('rp-close').addEventListener('click',()=>setRpView('list'));
-document.getElementById('rp-profile-close').addEventListener('click',()=>setRpView('list'));
+document.getElementById('rp-close')?.addEventListener('click',()=>setRpView('list'));
+document.getElementById('rp-profile-close')?.addEventListener('click',()=>setRpView('list'));
 document.getElementById('rp-profile-back').addEventListener('click',()=>setRpView('list'));
 document.getElementById('rp-chat-back').addEventListener('click',()=>{setRpView('list');renderRpInbox();});
 document.getElementById('rp-msg-btn').addEventListener('click',()=>rpOpenChat(currentProfileId));
@@ -1980,7 +1980,7 @@ function showRfModal(mode,reportedUid=null,reportedName=null){
   setTimeout(()=>ta.focus(),100);
 }
 function closeRfModal(){document.getElementById('rf-overlay').style.display='none';document.getElementById('rf-modal').style.display='none';}
-document.getElementById('rf-close').addEventListener('click',closeRfModal);
+document.getElementById('rf-close')?.addEventListener('click',closeRfModal);
 document.getElementById('rf-overlay').addEventListener('click',closeRfModal);
 
 // ── BLIP ──────────────────────────────────────────────────────────
@@ -2281,7 +2281,7 @@ function openProfileModal(uid){
   document.getElementById('modal-overlay').classList.add('show');
 }
 function closeProfileModal(){document.getElementById('profile-modal').classList.remove('show');document.getElementById('modal-overlay').classList.remove('show');}
-document.getElementById('modal-close').addEventListener('click',closeProfileModal);
+document.getElementById('modal-close')?.addEventListener('click',closeProfileModal);
 document.getElementById('modal-overlay').addEventListener('click',closeProfileModal);
 document.getElementById('modal-msg-btn').addEventListener('click',()=>{closeProfileModal();rpOpenChat(currentProfileId);});
 
