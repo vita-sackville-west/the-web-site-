@@ -766,6 +766,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Space Mono',monosp
     <div class="my-ps-header">
       <div class="my-ps-title">MY PROFILE</div>
       <button class="my-ps-close" id="my-ps-close">CLOSE</button>
+      <button id="delete-account-btn" style="background:transparent;border:none;color:rgba(255,45,120,0.3);font-family:'VT323',monospace;font-size:12px;letter-spacing:2px;cursor:pointer;padding:8px 16px;display:block;width:100%;text-align:center;">DELETE ACCOUNT</button>
     </div>
     <div class="my-ps-body">
       <div class="photo-grid">
@@ -1885,6 +1886,36 @@ document.getElementById('my-profile-btn').addEventListener('click',()=>{
   renderBlockedList();
 });
 document.getElementById('my-ps-close').addEventListener('click',()=>document.getElementById('my-profile-screen').classList.remove('open'));
+
+document.getElementById('delete-account-btn').addEventListener('click', async () => {
+  const confirmed = confirm('Are you sure you want to permanently delete your account? This cannot be undone.');
+  if(!confirmed) return;
+  const confirmed2 = confirm('Last chance — all your photos, messages and profile data will be deleted forever.');
+  if(!confirmed2) return;
+  
+  if(!currentUser) return;
+  
+  // Delete photos from storage
+  const {data:photos} = await sb.storage.from('photos').list(currentUser.id);
+  if(photos?.length) {
+    const paths = photos.map(p => `${currentUser.id}/${p.name}`);
+    await sb.storage.from('photos').remove(paths);
+  }
+  
+  // Delete messages, matches, availability, blocks
+  await sb.from('messages').delete().in('match_id', 
+    (await sb.from('matches').select('id').or(`user_a.eq.${currentUser.id},user_b.eq.${currentUser.id}`)).data?.map(m=>m.id)||[]
+  );
+  await sb.from('matches').delete().or(`user_a.eq.${currentUser.id},user_b.eq.${currentUser.id}`);
+  await sb.from('availability').delete().eq('user_id', currentUser.id);
+  await sb.from('blocks').delete().or(`blocker_id.eq.${currentUser.id},blocked_id.eq.${currentUser.id}`);
+  await sb.from('users').delete().eq('id', currentUser.id);
+  
+  // Sign out
+  await sb.auth.signOut();
+  alert('Your account has been deleted. Goodbye 💜');
+  location.reload();
+});
 document.getElementById('logout-btn').addEventListener('click',async()=>{await sb.auth.signOut();});
 
 async function handlePhotoUpload(slotIdx,input){
