@@ -1,0 +1,9 @@
+{
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "routes": [
+    { "src": "/privacy", "dest": "/privacy.html" },
+    { "src": "/privacy.html", "dest": "/privacy.html" }
+  ]
+}
