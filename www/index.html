@@ -790,7 +790,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Space Mono',monosp
       <div class="field-label">NAME</div>
       <input class="vita-field" id="my-name-field" placeholder="your name">
       <div class="field-label">USERNAME</div>
-      <input class="vita-field" id="my-username-field" placeholder="@username" style="letter-spacing:1px;">
+      <input class="vita-field" id="my-username-field" placeholder="@username — this is what people see, make it you" style="letter-spacing:1px;">
       <div class="field-label">AGE</div>
       <input class="vita-field" id="my-age-field" placeholder="age" type="number">
       <div class="field-label">PRONOUNS</div>
@@ -2390,9 +2390,33 @@ document.getElementById('ob-next').addEventListener('click',async()=>{
     closeOnboarding();
   }
 });
-document.getElementById('ob-skip').addEventListener('click',()=>closeOnboarding());
-function closeOnboarding(){
+document.getElementById('ob-skip').addEventListener('click',()=>{
+  if(obStep===0 && mySelectedStation){
+    obStation = mySelectedStation;
+    obStep = 1;
+    renderObStep();
+    document.getElementById('ob-skip').textContent = '↩ skip — use my last times';
+  } else if(obStep===1){
+    closeOnboarding(true); // reuse last availability
+  } else {
+    closeOnboarding();
+  }
+});
+async function closeOnboarding(reuseLastTimes=false){
   document.getElementById('onboarding-popup').classList.remove('show');
+  if(reuseLastTimes && currentUser && (obStation||mySelectedStation)){
+    const st = obStation || mySelectedStation;
+    const today = new Date().toISOString().split('T')[0];
+    // Find last saved hours for this user at this station
+    const {data:lastAvail} = await sb.from('availability')
+      .select('hour').eq('user_id', currentUser.id)
+      .order('created_at', {ascending:false}).limit(20);
+    if(lastAvail?.length){
+      const hours = [...new Set(lastAvail.map(a=>a.hour))].slice(0,6);
+      const rows = hours.map(h=>({user_id:currentUser.id, station_id:st.id, hour:h, date:today}));
+      await sb.from('availability').upsert(rows, {onConflict:'user_id,station_id,hour,date'});
+    }
+  }
   loadMapUsers();
   showWelcomeToast();
 }
