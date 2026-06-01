@@ -1048,8 +1048,8 @@ let stationData = [];
 
 //  MAP 
 const LONDON_BOUNDS = L.latLngBounds(
-  L.latLng(51.28, -0.55),  // SW corner
-  L.latLng(51.72,  0.32)   // NE corner
+  L.latLng(51.20, -0.70),  // SW corner — extended
+  L.latLng(51.80,  0.55)   // NE corner — extended
 );
 const map = L.map('map',{
   center:[51.505,-0.09],zoom:currentZoom,
@@ -1057,7 +1057,7 @@ const map = L.map('map',{
   touchZoom:true,doubleClickZoom:true,
   minZoom:MIN_ZOOM,maxZoom:MAX_ZOOM,
   maxBounds:LONDON_BOUNDS,
-  maxBoundsViscosity:0.85,
+  maxBoundsViscosity:0.5,
 });
 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
   attribution:'&copy; OSM &copy; CARTO',subdomains:'abcd',maxZoom:MAX_ZOOM,
