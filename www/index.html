@@ -679,7 +679,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Space Mono',monosp
         </div>
         <div style="flex-shrink:0;padding:6px 14px 10px;border-top:1px solid rgba(255,45,120,0.1);">
           <div style="display:flex;gap:6px;">
-            <button id="rp-blip-btn" class="blip-btn" title="Blip" style="flex:0 0 38px;height:38px;">
+            <button id="rp-blip-btn" class="blip-btn" title="Blip" style="flex:0 0 44px;height:44px;min-height:44px;">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                 <circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/>
                 <circle cx="12" cy="12" r="5" stroke-dasharray="2 2" opacity="0.6"/>
@@ -687,11 +687,11 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Space Mono',monosp
                 <line x1="12" y1="12" x2="19" y2="5" stroke-width="1" opacity="0.5"/>
               </svg>
             </button>
-            <button class="rp-msg-btn" id="rp-msg-btn" style="flex:1;margin:0;">MESSAGE →</button>
+            <button class="rp-msg-btn" id="rp-msg-btn" style="flex:1;margin:0;height:44px;min-height:44px;">MESSAGE →</button>
           </div>
-          <div style="display:flex;gap:6px;margin-top:6px;">
-            <button id="rp-block-btn" style="flex:1;background:transparent;border:1px solid rgba(255,165,0,0.5);color:rgba(255,165,0,0.7);font-family:'VT323',monospace;font-size:12px;letter-spacing:1px;padding:6px;cursor:pointer;">BLOCK</button>
-            <button id="rp-report-btn" style="flex:1;background:transparent;border:1px solid rgba(255,45,120,0.5);color:rgba(255,45,120,0.7);font-family:'VT323',monospace;font-size:12px;letter-spacing:1px;padding:6px;cursor:pointer;">⚑ REPORT</button>
+          <div style="display:flex;gap:6px;margin-top:6px;position:relative;z-index:10;">
+            <button id="rp-block-btn" style="flex:1;background:transparent;border:1px solid rgba(255,165,0,0.5);color:rgba(255,165,0,0.7);font-family:'VT323',monospace;font-size:12px;letter-spacing:1px;padding:6px;cursor:pointer;pointer-events:all;position:relative;z-index:10;">BLOCK</button>
+            <button id="rp-report-btn" style="flex:1;background:transparent;border:1px solid rgba(255,45,120,0.5);color:rgba(255,45,120,0.7);font-family:'VT323',monospace;font-size:12px;letter-spacing:1px;padding:6px;cursor:pointer;pointer-events:all;position:relative;z-index:10;">⚑ REPORT</button>
           </div>
         </div>
       </div>
@@ -747,14 +747,14 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Space Mono',monosp
   <!-- STATION DRAWER -->
   <div id="drawer">
     <div class="drawer-handle" id="drawer-handle"></div>
-    <div class="drawer-header">
+    <div class="drawer-header" style="display:flex;align-items:flex-start;justify-content:space-between;">
       <div>
         <div class="drawer-station-name" id="drawer-station-name"></div>
         <div style="font-size:11px;color:rgba(26,10,46,0.4);margin-top:1px;" id="drawer-station-meta"></div>
       </div>
       <div style="display:flex;align-items:center;gap:8px;">
         <div class="drawer-time-tag" id="drawer-time-tag"></div>
-        
+        <button id="drawer-close-btn" style="background:transparent;border:none;color:rgba(26,10,46,0.5);font-size:18px;cursor:pointer;padding:2px 6px;line-height:1;font-family:monospace;">✕</button>
       </div>
     </div>
     <div class="drawer-scroll" id="drawer-scroll"></div>
@@ -1132,6 +1132,13 @@ function initPanelTimeScrubber(){
   // Update panel thumb whenever block changes
   const observer = new MutationObserver(updatePanelThumb);
 }
+
+// ── DRAWER CLOSE BUTTON ─────────────────────────────────────────
+document.getElementById('drawer-close-btn').addEventListener('click', () => {
+  document.getElementById('drawer').classList.remove('open');
+  // Deselect the station tag
+  stationData.forEach(s => { if(s.tagOpen){ s.tagOpen=false; refreshMarker(s); } });
+});
 
 // ── STATION SEARCH ───────────────────────────────────────────────
 const searchInput = document.getElementById('station-search-input');
