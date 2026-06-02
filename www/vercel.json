@@ -2,7 +2,7 @@
   "rewrites": [
     { "source": "/privacy", "destination": "/privacy.html" },
     { "source": "/delete-account", "destination": "/delete-account.html" },
+    { "source": "/child-safety", "destination": "/child-safety.html" },
     { "source": "/", "destination": "/index.html" }
-    { "source": "/child-safety", "destination": "/child-safety.html" }
   ]
 }
