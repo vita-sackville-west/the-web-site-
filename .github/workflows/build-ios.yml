@@ -37,11 +37,10 @@ jobs:
           DISTRIBUTION_CERTIFICATE_P12: ${{ secrets.DISTRIBUTION_CERTIFICATE_P12 }}
           DISTRIBUTION_CERTIFICATE_PASSWORD: ${{ secrets.DISTRIBUTION_CERTIFICATE_PASSWORD }}
         run: |
-          KEYCHAIN_PASSWORD="keychain_password"
           KEYCHAIN_PATH=$RUNNER_TEMP/build.keychain
-          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security create-keychain -p "keychain_password" "$KEYCHAIN_PATH"
           security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security unlock-keychain -p "keychain_password" "$KEYCHAIN_PATH"
           printf '%s' "$DISTRIBUTION_CERTIFICATE_P12" | base64 --decode > $RUNNER_TEMP/distribution.p12
           security import $RUNNER_TEMP/distribution.p12 \
             -k "$KEYCHAIN_PATH" \
@@ -50,7 +49,7 @@ jobs:
           security list-keychain -d user -s "$KEYCHAIN_PATH"
           security set-key-partition-list \
             -S apple-tool:,apple:,codesign: \
-            -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+            -s -k "keychain_password" "$KEYCHAIN_PATH"
 
       - name: Install Provisioning Profile
         env:
@@ -59,6 +58,24 @@ jobs:
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           printf '%s' "$PROVISIONING_PROFILE" | base64 --decode > \
             ~/Library/MobileDevice/Provisioning\ Profiles/distribution.mobileprovision
+          # Get the UUID of the provisioning profile
+          uuid=$(security cms -D -i ~/Library/MobileDevice/Provisioning\ Profiles/distribution.mobileprovision | plutil -extract UUID raw -)
+          echo "Profile UUID: $uuid"
+          echo "PROFILE_UUID=$uuid" >> $GITHUB_ENV
+
+      - name: Set Manual Signing in Xcode Project
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          cd ios/App
+          # Use ruby to patch the project file to manual signing
+          ruby -e "
+            content = File.read('App.xcodeproj/project.pbxproj')
+            content.gsub!('ProvisioningStyle = Automatic;', 'ProvisioningStyle = Manual;')
+            content.gsub!('CODE_SIGN_STYLE = Automatic;', 'CODE_SIGN_STYLE = Manual;')
+            File.write('App.xcodeproj/project.pbxproj', content)
+            puts 'Patched to manual signing'
+          "
 
       - name: Build iOS (signed)
         env:
@@ -76,8 +93,7 @@ jobs:
             CODE_SIGN_STYLE=Manual \
             CODE_SIGN_IDENTITY="Apple Distribution" \
             PROVISIONING_PROFILE_SPECIFIER="TheWebSite AppStore" \
-            CODE_SIGN_STYLE[sdk=iphoneos*]=Manual \
-            OTHER_CODE_SIGN_FLAGS="--keychain $RUNNER_TEMP/build.keychain"
+            PROVISIONING_PROFILE="$PROFILE_UUID"
 
       - name: Export IPA
         env:
@@ -90,8 +106,6 @@ jobs:
           <dict>
             <key>method</key>
             <string>app-store-connect</string>
-            <key>teamID</key>
-            <string>56ZPS4F7UW</string>
             <key>signingStyle</key>
             <string>manual</string>
             <key>provisioningProfiles</key>
