@@ -27,11 +27,6 @@ jobs:
         with:
           xcode-version: latest-stable
 
-      - name: Install CocoaPods
-        run: |
-          cd ios/App
-          pod install --repo-update
-
       - name: Install Certificate
         env:
           DISTRIBUTION_CERTIFICATE_P12: ${{ secrets.DISTRIBUTION_CERTIFICATE_P12 }}
@@ -58,32 +53,17 @@ jobs:
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           printf '%s' "$PROVISIONING_PROFILE" | base64 --decode > \
             ~/Library/MobileDevice/Provisioning\ Profiles/distribution.mobileprovision
-          # Get the UUID of the provisioning profile
           uuid=$(security cms -D -i ~/Library/MobileDevice/Provisioning\ Profiles/distribution.mobileprovision | plutil -extract UUID raw -)
-          echo "Profile UUID: $uuid"
           echo "PROFILE_UUID=$uuid" >> $GITHUB_ENV
+          echo "Profile UUID: $uuid"
 
-      - name: Set Manual Signing in Xcode Project
-        env:
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        run: |
-          cd ios/App
-          # Use ruby to patch the project file to manual signing
-          ruby -e "
-            content = File.read('App.xcodeproj/project.pbxproj')
-            content.gsub!('ProvisioningStyle = Automatic;', 'ProvisioningStyle = Manual;')
-            content.gsub!('CODE_SIGN_STYLE = Automatic;', 'CODE_SIGN_STYLE = Manual;')
-            File.write('App.xcodeproj/project.pbxproj', content)
-            puts 'Patched to manual signing'
-          "
-
-      - name: Build iOS (signed)
+      - name: Build iOS (signed, SPM only - no CocoaPods)
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           cd ios/App
           xcodebuild \
-            -workspace App.xcworkspace \
+            -project App.xcodeproj \
             -scheme App \
             -configuration Release \
             -destination 'generic/platform=iOS' \
