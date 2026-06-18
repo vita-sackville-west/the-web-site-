@@ -57,7 +57,7 @@ jobs:
           echo "PROFILE_UUID=$uuid" >> $GITHUB_ENV
           echo "Profile UUID: $uuid"
 
-      - name: Build iOS (signed, SPM only - no CocoaPods)
+      - name: Build iOS
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
@@ -73,7 +73,10 @@ jobs:
             CODE_SIGN_STYLE=Manual \
             CODE_SIGN_IDENTITY="Apple Distribution" \
             PROVISIONING_PROFILE_SPECIFIER="TheWebSite AppStore" \
-            PROVISIONING_PROFILE="$PROFILE_UUID"
+            PROVISIONING_PROFILE="$PROFILE_UUID" \
+            CODE_SIGNING_ALLOWED[sdk=iphoneos*]=YES \
+            CODE_SIGNING_REQUIRED[sdk=iphoneos*]=YES \
+            OTHER_CODE_SIGN_FLAGS="--keychain $RUNNER_TEMP/build.keychain"
 
       - name: Export IPA
         env:
