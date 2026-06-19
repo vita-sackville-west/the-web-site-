@@ -943,57 +943,84 @@ async function setupPushNotifications(){
     if(!window.Capacitor) { alert('DEBUG: no Capacitor'); return; }
     if(!window.Capacitor.isNativePlatform()) { alert('DEBUG: not native platform'); return; }
 
-    // Use FirebaseMessaging plugin ONLY — gives a proper FCM token on BOTH
-    // iOS and Android. Do NOT also call @capacitor/push-notifications —
-    // on iOS both plugins compete for the same native APNs registration
-    // delegate callback, which causes "No APNS token specified" errors.
-    // FirebaseMessaging.requestPermissions() handles native APNs
-    // registration internally on iOS.
     let FirebaseMessaging = null;
     try { FirebaseMessaging = window.Capacitor.Plugins.FirebaseMessaging; } catch(e){
-      alert('DEBUG: error accessing plugin: ' + String(e));
+      alert('DEBUG: error accessing FirebaseMessaging plugin: ' + String(e));
+    }
+    if(!FirebaseMessaging) { alert('DEBUG: FirebaseMessaging plugin not found.'); return; }
+
+    let PushNotifications = null;
+    try { PushNotifications = window.Capacitor.Plugins.PushNotifications; } catch(e){}
+    if(!PushNotifications) { alert('DEBUG: PushNotifications plugin not found.'); return; }
+
+    // Step 1: explicitly register for APNs via PushNotifications, and WAIT
+    // for the native 'registration' event. Now that AppDelegate.swift
+    // forwards didRegisterForRemoteNotificationsWithDeviceToken, this
+    // event should actually fire (it never could before that fix).
+    alert('DEBUG: requesting APNs permission...');
+    let pnPermission = null;
+    try {
+      pnPermission = await PushNotifications.requestPermissions();
+    } catch(e) { alert('DEBUG: APNs permission request failed: ' + String(e)); return; }
+
+    if(!pnPermission || pnPermission.receive !== 'granted') {
+      alert('DEBUG: APNs permission not granted: ' + JSON.stringify(pnPermission));
+      return;
     }
 
-    if(!FirebaseMessaging) { alert('DEBUG: FirebaseMessaging plugin not found. Available: ' + Object.keys(window.Capacitor.Plugins||{}).join(', ')); return; }
+    alert('DEBUG: APNs permission granted, calling register() and waiting for native event...');
 
-    alert('DEBUG: requesting permission (handles APNs registration internally)...');
+    const apnsResult = await new Promise((resolve) => {
+      let resolved = false;
+      PushNotifications.addListener('registration', (token) => {
+        if(!resolved){ resolved = true; resolve({ok:true, token: token?.value}); }
+      });
+      PushNotifications.addListener('registrationError', (err) => {
+        if(!resolved){ resolved = true; resolve({ok:false, error: JSON.stringify(err)}); }
+      });
+      PushNotifications.register().catch((e) => {
+        if(!resolved){ resolved = true; resolve({ok:false, error: 'register() threw: '+String(e)}); }
+      });
+      setTimeout(() => { if(!resolved){ resolved = true; resolve({ok:false, error:'TIMEOUT after 8s — native event never fired'}); } }, 8000);
+    });
+
+    if(apnsResult.ok){
+      alert('DEBUG: APNs registration SUCCEEDED! Raw token: ' + (apnsResult.token?.substring(0,30)+'...'));
+    } else {
+      alert('DEBUG: APNs registration FAILED: ' + apnsResult.error);
+      return;
+    }
+
+    // Step 2: now that Apple has confirmed registration, ask Firebase for
+    // the FCM token. Give it a brief moment to let Firebase's internal
+    // swizzling pick up the same native callback.
+    await new Promise(r => setTimeout(r, 1500));
 
     let permission = null;
     try {
       permission = await FirebaseMessaging.requestPermissions();
-    } catch(e) { alert('DEBUG: permission request failed: ' + String(e)); return; }
+    } catch(e) { alert('DEBUG: FCM permission request failed: ' + String(e)); return; }
 
     if(!permission || permission.receive !== 'granted') {
-      alert('DEBUG: permission not granted: ' + JSON.stringify(permission));
+      alert('DEBUG: FCM permission not granted: ' + JSON.stringify(permission));
       return;
     }
 
-    alert('DEBUG: permission granted. Waiting for APNs to settle...');
-
-    // The native registerForRemoteNotifications callback is async and may
-    // not have completed by the time requestPermissions() resolves.
-    // Give it a moment before asking for the FCM token.
-    await new Promise(r => setTimeout(r, 2500));
-
-    alert('DEBUG: getting token now...');
-
-    // Get the FCM token, with one retry if it fails the first time
     let token = null;
-    for(let attempt=1; attempt<=2 && !token; attempt++){
+    for(let attempt=1; attempt<=3 && !token; attempt++){
       try {
         const result = await FirebaseMessaging.getToken();
         token = result?.token;
-        if(!token && attempt===1){
-          alert('DEBUG: attempt 1 got no token, waiting 3s and retrying...');
+        if(!token && attempt<3){
           await new Promise(r => setTimeout(r, 3000));
         }
       } catch(e) {
-        alert(`DEBUG: getToken attempt ${attempt} failed: ` + String(e));
-        if(attempt===1) await new Promise(r => setTimeout(r, 3000));
+        alert(`DEBUG: getToken attempt ${attempt}/3 failed: ` + String(e));
+        if(attempt<3) await new Promise(r => setTimeout(r, 3000));
       }
     }
 
-    alert('DEBUG: final token result: ' + (token ? token.substring(0,30)+'...' : 'STILL NO TOKEN'));
+    alert('DEBUG: final FCM token: ' + (token ? token.substring(0,30)+'...' : 'STILL NO TOKEN'));
 
     if(token && currentUser){
       const {error} = await sb.from('users').update({push_token: token}).eq('id', currentUser.id);
@@ -1032,7 +1059,7 @@ async function setupPushNotifications(){
     } catch(e) {}
 
   } catch(e) {
-    console.log('Push setup error (non-fatal):', String(e));
+    alert('DEBUG: outer catch: ' + String(e));
   }
 }
 
