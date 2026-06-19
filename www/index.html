@@ -108,8 +108,9 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Space Mono',monosp
 .line-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
 
 /* ── RIGHT PANEL (inbox + profiles) ── */
-#right-panel{position:fixed;top:48px;right:0;bottom:0;width:300px;
+#right-panel{position:fixed;top:calc(48px + env(safe-area-inset-top));right:0;bottom:0;width:300px;
   background:#110820;border-left:2px solid rgba(255,110,180,0.3);
+  padding-bottom:env(safe-area-inset-bottom);
   z-index:40;display:flex;flex-direction:column;overflow:hidden;}
 
 /* ── MOBILE: panel overlays, map fills screen ── */
@@ -120,6 +121,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Space Mono',monosp
     transition:transform 0.32s cubic-bezier(0.16,1,0.3,1);
     z-index:60;
     top:0;
+    padding-top:env(safe-area-inset-top);
   }
   #right-panel.mobile-open{transform:translateX(0);}
   #map{right:0!important;}
@@ -940,58 +942,61 @@ async function setupPushNotifications(){
   try {
     if(!window.Capacitor) return;
     if(!window.Capacitor.isNativePlatform()) return;
-    
-    // Try multiple ways to access the plugin
-    let PushNotifications = null;
-    try { PushNotifications = window.Capacitor.Plugins.PushNotifications; } catch(e){}
-    try { if(!PushNotifications) PushNotifications = window.CapacitorPushNotifications?.PushNotifications; } catch(e){}
-    
-    if(!PushNotifications) { console.log('No push plugin found'); return; }
 
-    // Request permission — wrapped separately
+    // Use FirebaseMessaging plugin — gives a proper FCM token on BOTH
+    // iOS and Android (the older PushNotifications plugin gives a raw
+    // APNs token on iOS which Firebase can't use to send notifications)
+    let FirebaseMessaging = null;
+    try { FirebaseMessaging = window.Capacitor.Plugins.FirebaseMessaging; } catch(e){}
+
+    if(!FirebaseMessaging) { console.log('No FirebaseMessaging plugin found'); return; }
+
+    // Request permission
     let permission = null;
     try {
-      permission = await PushNotifications.requestPermissions();
+      permission = await FirebaseMessaging.requestPermissions();
     } catch(e) { console.log('Permission request failed:', e); return; }
-    
+
     if(!permission || permission.receive !== 'granted') {
       console.log('Push permission not granted:', permission?.receive);
       return;
     }
 
-    // Register — wrapped separately  
+    // Get the FCM token directly
     try {
-      await PushNotifications.register();
-    } catch(e) { console.log('Push register failed:', e); return; }
+      const result = await FirebaseMessaging.getToken();
+      const token = result?.token;
+      console.log('FCM token received:', token?.substring(0,20)+'...');
+      if(token && currentUser){
+        const {error} = await sb.from('users').update({push_token: token}).eq('id', currentUser.id);
+        if(error) console.log('Token save error:', error);
+        else console.log('FCM token saved successfully');
+      }
+    } catch(e) { console.log('getToken failed:', e); }
 
-    // Listeners — each wrapped separately so one failure doesn't kill others
+    // Listen for token refresh (tokens can rotate)
     try {
-      PushNotifications.addListener('registration', async (token) => {
+      FirebaseMessaging.addListener('tokenReceived', async (event) => {
         try {
-          console.log('Push token received:', token.value?.substring(0,20)+'...');
-          if(!currentUser || !token.value) return;
-          await sb.from('users').update({push_token: token.value}).eq('id', currentUser.id);
-          console.log('Push token saved');
-        } catch(e) { console.log('Token save error:', e); }
-      });
-    } catch(e) { console.log('Registration listener error:', e); }
-
-    try {
-      PushNotifications.addListener('registrationError', (err) => {
-        console.log('Push registration error:', JSON.stringify(err));
+          if(!currentUser || !event.token) return;
+          await sb.from('users').update({push_token: event.token}).eq('id', currentUser.id);
+          console.log('FCM token refreshed and saved');
+        } catch(e) { console.log('Token refresh save error:', e); }
       });
     } catch(e) {}
 
+    // Foreground notification
     try {
-      PushNotifications.addListener('pushNotificationReceived', (notification) => {
+      FirebaseMessaging.addListener('notificationReceived', (event) => {
         console.log('Notification received in foreground');
       });
     } catch(e) {}
 
+    // Handle tap on notification
     try {
-      PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
+      FirebaseMessaging.addListener('notificationActionPerformed', (event) => {
         try {
-          const data = action.notification.data;
+          const data = event.notification?.data;
           if(data && data.senderId) rpOpenProfile(data.senderId);
         } catch(e) {}
       });
@@ -1001,6 +1006,7 @@ async function setupPushNotifications(){
     console.log('Push setup error (non-fatal):', String(e));
   }
 }
+
 
 //  STATE 
 let currentUser = null;
