@@ -940,39 +940,47 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
 async function setupPushNotifications(){
   // Wrapped in multiple try/catch so it can NEVER crash the app
   try {
-    if(!window.Capacitor) return;
-    if(!window.Capacitor.isNativePlatform()) return;
+    if(!window.Capacitor) { alert('DEBUG: no Capacitor'); return; }
+    if(!window.Capacitor.isNativePlatform()) { alert('DEBUG: not native platform'); return; }
 
     // Use FirebaseMessaging plugin — gives a proper FCM token on BOTH
     // iOS and Android (the older PushNotifications plugin gives a raw
     // APNs token on iOS which Firebase can't use to send notifications)
     let FirebaseMessaging = null;
-    try { FirebaseMessaging = window.Capacitor.Plugins.FirebaseMessaging; } catch(e){}
+    try { FirebaseMessaging = window.Capacitor.Plugins.FirebaseMessaging; } catch(e){
+      alert('DEBUG: error accessing plugin: ' + String(e));
+    }
 
-    if(!FirebaseMessaging) { console.log('No FirebaseMessaging plugin found'); return; }
+    if(!FirebaseMessaging) { alert('DEBUG: FirebaseMessaging plugin not found. Available: ' + Object.keys(window.Capacitor.Plugins||{}).join(', ')); return; }
+
+    alert('DEBUG: FirebaseMessaging plugin found, requesting permission...');
 
     // Request permission
     let permission = null;
     try {
       permission = await FirebaseMessaging.requestPermissions();
-    } catch(e) { console.log('Permission request failed:', e); return; }
+    } catch(e) { alert('DEBUG: permission request failed: ' + String(e)); return; }
 
     if(!permission || permission.receive !== 'granted') {
-      console.log('Push permission not granted:', permission?.receive);
+      alert('DEBUG: permission not granted: ' + JSON.stringify(permission));
       return;
     }
+
+    alert('DEBUG: permission granted, getting token...');
 
     // Get the FCM token directly
     try {
       const result = await FirebaseMessaging.getToken();
       const token = result?.token;
-      console.log('FCM token received:', token?.substring(0,20)+'...');
+      alert('DEBUG: token result: ' + (token ? token.substring(0,30)+'...' : 'NO TOKEN, full result: '+JSON.stringify(result)));
       if(token && currentUser){
         const {error} = await sb.from('users').update({push_token: token}).eq('id', currentUser.id);
-        if(error) console.log('Token save error:', error);
-        else console.log('FCM token saved successfully');
+        if(error) alert('DEBUG: token save error: ' + JSON.stringify(error));
+        else alert('DEBUG: token saved successfully!');
+      } else if(!currentUser) {
+        alert('DEBUG: no currentUser set, cannot save token');
       }
-    } catch(e) { console.log('getToken failed:', e); }
+    } catch(e) { alert('DEBUG: getToken failed: ' + String(e)); }
 
     // Listen for token refresh (tokens can rotate)
     try {
