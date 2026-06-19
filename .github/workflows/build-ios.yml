@@ -27,7 +27,7 @@ jobs:
         with:
           xcode-version: latest-stable
 
-      - name: Register GoogleService-Info.plist in Xcode project
+      - name: Register GoogleService-Info.plist and entitlements in Xcode project
         run: |
           gem install xcodeproj --no-document
           ruby -e "
@@ -47,6 +47,13 @@ jobs:
             else
               puts 'GoogleService-Info.plist already in project'
             end
+
+            # Link entitlements file so push notification capability is
+            # actually embedded in the signed binary
+            target.build_configurations.each do |config|
+              config.build_settings['CODE_SIGN_ENTITLEMENTS'] = 'App/App.entitlements'
+            end
+            puts 'Linked App.entitlements to all build configurations'
             
             project.save
           "
