@@ -953,7 +953,35 @@ async function setupPushNotifications(){
 
     if(!FirebaseMessaging) { alert('DEBUG: FirebaseMessaging plugin not found. Available: ' + Object.keys(window.Capacitor.Plugins||{}).join(', ')); return; }
 
-    alert('DEBUG: FirebaseMessaging plugin found, requesting permission...');
+    // Step 1: Register for raw APNs token via PushNotifications plugin first.
+    // iOS requires this native registration step BEFORE FirebaseMessaging
+    // can convert it into an FCM token.
+    let PushNotifications = null;
+    try { PushNotifications = window.Capacitor.Plugins.PushNotifications; } catch(e){}
+
+    if(PushNotifications){
+      try {
+        const pnPermission = await PushNotifications.requestPermissions();
+        if(pnPermission && pnPermission.receive === 'granted'){
+          await PushNotifications.register();
+          // Wait for APNs registration to complete before asking Firebase for a token
+          await new Promise((resolve) => {
+            let resolved = false;
+            PushNotifications.addListener('registration', () => {
+              if(!resolved){ resolved = true; resolve(); }
+            });
+            PushNotifications.addListener('registrationError', () => {
+              if(!resolved){ resolved = true; resolve(); }
+            });
+            setTimeout(() => { if(!resolved){ resolved = true; resolve(); } }, 5000);
+          });
+        }
+      } catch(e) { alert('DEBUG: APNs register step failed: ' + String(e)); }
+    } else {
+      alert('DEBUG: PushNotifications plugin not found for APNs registration');
+    }
+
+    alert('DEBUG: APNs step done, requesting FCM permission...');
 
     // Request permission
     let permission = null;
