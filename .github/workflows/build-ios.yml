@@ -36,10 +36,10 @@ jobs:
             project = Xcodeproj::Project.open(project_path)
             target = project.targets.find { |t| t.name == 'App' }
             group = project.main_group.find_subpath('App', true)
-            
+
             plist_path = 'GoogleService-Info.plist'
             existing = group.files.find { |f| f.path == plist_path }
-            
+
             unless existing
               file_ref = group.new_reference(plist_path)
               target.resources_build_phase.add_file_reference(file_ref)
@@ -48,15 +48,14 @@ jobs:
               puts 'GoogleService-Info.plist already in project'
             end
 
-            # Link entitlements file so push notification capability is
-            # actually embedded in the signed binary
             target.build_configurations.each do |config|
               config.build_settings['CODE_SIGN_ENTITLEMENTS'] = 'App/App.entitlements'
+              config.build_settings['CODE_SIGN_STYLE'] = 'Manual'
+              config.build_settings['PROVISIONING_PROFILE_SPECIFIER'] = 'TheWebSite AppStore'
             end
-            puts 'Linked App.entitlements to all build configurations'
-            
+            puts 'Forced Manual signing with entitlements on all build configs'
+
             project.save
-          "
 
       - name: Install Certificate
         env:
