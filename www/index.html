@@ -2536,8 +2536,19 @@ function renderObStep(){
     title.textContent='WHAT\'S YOUR NAME?';step.textContent='STEP 1 OF 3';next.textContent='NEXT';
     body.innerHTML=`<div class="ob-label">What should people call you? This is your display name — not your username.</div>
       <input class="ob-station-search" id="ob-name-input" placeholder="your name..." maxlength="30" style="margin-top:12px;">
-      <div style="font-family:'VT323',monospace;font-size:13px;color:rgba(217,184,255,0.6);letter-spacing:1px;margin-top:8px;">You can change this later in your profile.</div>`;
+      <div style="font-family:'VT323',monospace;font-size:13px;color:rgba(217,184,255,0.6);letter-spacing:1px;margin-top:8px;">You can change this later in your profile.</div>
+      <label style="display:flex;align-items:flex-start;gap:8px;margin-top:18px;cursor:pointer;font-family:'VT323',monospace;font-size:15px;color:var(--cyan);letter-spacing:1px;line-height:1.4;">
+        <input type="checkbox" id="ob-waitlist-check" style="margin-top:3px;accent-color:var(--cyan);flex-shrink:0;">
+        <span>Email me when The Web(Site) launches in my area. We'll only use this to send you one launch announcement — no spam, unsubscribe anytime.</span>
+      </label>
+      <input type="email" id="ob-waitlist-email" placeholder="your email..." style="display:none;margin-top:10px;" class="ob-station-search">`;
     setTimeout(()=>document.getElementById('ob-name-input')?.focus(),100);
+    const wlCheck=document.getElementById('ob-waitlist-check');
+    const wlEmail=document.getElementById('ob-waitlist-email');
+    wlCheck.addEventListener('change',()=>{
+      wlEmail.style.display=wlCheck.checked?'block':'none';
+      if(wlCheck.checked) setTimeout(()=>wlEmail.focus(),50);
+    });
   } else if(obStep===1){
     title.textContent='YOUR STATION';step.textContent='STEP 2 OF 3';next.textContent='NEXT';
     body.innerHTML=`<div class="ob-label">Choose your nearest tube station</div><input class="ob-station-search" id="ob-search" placeholder="search..."><div class="ob-station-list" id="ob-list"></div><div id="ob-selected" style="font-family:'VT323',monospace;font-size:18px;color:var(--cyan);letter-spacing:2px;min-height:22px;"></div>`;
@@ -2575,6 +2586,15 @@ document.getElementById('ob-next').addEventListener('click',async()=>{
     const enteredName=nameInput?nameInput.value.trim():'';
     if(enteredName&&currentUser){
       await sb.from('users').update({name:enteredName}).eq('id',currentUser.id);
+    }
+    const wlCheck=document.getElementById('ob-waitlist-check');
+    const wlEmail=document.getElementById('ob-waitlist-email');
+    if(wlCheck&&wlCheck.checked&&wlEmail&&wlEmail.value.trim()){
+      try{
+        await sb.from('waitlist').insert({email:wlEmail.value.trim()});
+      }catch(e){
+        console.error('waitlist insert error:',e);
+      }
     }
     obStep=1;renderObStep();
   } else if(obStep===1){
