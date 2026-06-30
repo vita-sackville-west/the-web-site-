@@ -56,6 +56,7 @@ jobs:
             puts 'Forced Manual signing with entitlements on all build configs'
 
             project.save
+          "
 
       - name: Install Certificate
         env:
