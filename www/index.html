@@ -945,20 +945,20 @@ async function setupPushNotifications(){
 
     let FirebaseMessaging = null;
     try { FirebaseMessaging = window.Capacitor.Plugins.FirebaseMessaging; } catch(e){}
-    if(!FirebaseMessaging) return;
+    if(!FirebaseMessaging) { alert('DEBUG: FirebaseMessaging plugin not found.'); return; }
 
     let PushNotifications = null;
     try { PushNotifications = window.Capacitor.Plugins.PushNotifications; } catch(e){}
-    if(!PushNotifications) return;
+    if(!PushNotifications) { alert('DEBUG: PushNotifications plugin not found.'); return; }
 
     // Step 1: explicitly register for APNs and wait for the native event
     let pnPermission = null;
     try {
       pnPermission = await PushNotifications.requestPermissions();
-    } catch(e) { console.log('APNs permission request failed:', e); return; }
+    } catch(e) { alert('DEBUG: APNs permission request failed: ' + String(e)); return; }
 
     if(!pnPermission || pnPermission.receive !== 'granted') {
-      console.log('APNs permission not granted:', pnPermission);
+      alert('DEBUG: APNs permission not granted: ' + JSON.stringify(pnPermission));
       return;
     }
 
@@ -976,8 +976,10 @@ async function setupPushNotifications(){
       setTimeout(() => { if(!resolved){ resolved = true; resolve({ok:false, error:'TIMEOUT after 8s'}); } }, 8000);
     });
 
-    if(!apnsResult.ok){
-      console.log('APNs registration failed:', apnsResult.error);
+    if(apnsResult.ok){
+      alert('DEBUG: APNs SUCCESS! Raw token: ' + (apnsResult.token ? apnsResult.token.substring(0,30)+'...' : '(empty)'));
+    } else {
+      alert('DEBUG: APNs registration failed: ' + apnsResult.error);
       return;
     }
 
@@ -987,10 +989,10 @@ async function setupPushNotifications(){
     let permission = null;
     try {
       permission = await FirebaseMessaging.requestPermissions();
-    } catch(e) { console.log('FCM permission request failed:', e); return; }
+    } catch(e) { alert('DEBUG: FCM permission request failed: ' + String(e)); return; }
 
     if(!permission || permission.receive !== 'granted') {
-      console.log('FCM permission not granted:', permission);
+      alert('DEBUG: FCM permission not granted: ' + JSON.stringify(permission));
       return;
     }
 
@@ -1003,15 +1005,19 @@ async function setupPushNotifications(){
           await new Promise(r => setTimeout(r, 3000));
         }
       } catch(e) {
-        console.log(`getToken attempt ${attempt}/3 failed:`, e);
+        alert(`DEBUG: getToken attempt ${attempt}/3 failed: ` + String(e));
         if(attempt<3) await new Promise(r => setTimeout(r, 3000));
       }
     }
 
+    alert('DEBUG: final FCM token: ' + (token ? token.substring(0,30)+'...' : 'STILL NO TOKEN'));
+
     if(token && currentUser){
       const {error} = await sb.from('users').update({push_token: token}).eq('id', currentUser.id);
-      if(error) console.log('Token save error:', error);
-      else console.log('FCM token saved successfully');
+      if(error) alert('DEBUG: token save error: ' + JSON.stringify(error));
+      else alert('DEBUG: token saved successfully!');
+    } else if(!currentUser) {
+      alert('DEBUG: no currentUser set, cannot save token');
     }
 
     // Listen for token refresh (tokens can rotate)
@@ -1040,7 +1046,7 @@ async function setupPushNotifications(){
     } catch(e) {}
 
   } catch(e) {
-    console.log('Push setup error (non-fatal):', String(e));
+    alert('DEBUG: outer catch: ' + String(e));
   }
 }
 
