@@ -1,5 +1,7 @@
 node_modules/ 
 android/build/ 
 ios/App/Pods/ 
-android/thewebsite.keystore 
-android/thewebsite.keystore 
+android/thewebsite.keystore
+android/thewebsite.keystore
+*firebase-adminsdk*.json
+supabase/.temp/
