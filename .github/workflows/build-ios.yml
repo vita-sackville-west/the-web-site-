@@ -118,8 +118,8 @@ jobs:
             CODE_SIGN_IDENTITY="Apple Distribution" \
             PROVISIONING_PROFILE_SPECIFIER="TheWebSite AppStore" \
             PROVISIONING_PROFILE="$PROFILE_UUID" \
-            CODE_SIGNING_ALLOWED[sdk=iphoneos*]=YES \
-            CODE_SIGNING_REQUIRED[sdk=iphoneos*]=YES \
+            CODE_SIGNING_ALLOWED=YES \
+            CODE_SIGNING_REQUIRED=YES \
             OTHER_CODE_SIGN_FLAGS="--keychain $RUNNER_TEMP/build.keychain"
 
       - name: Show signed app entitlements (diagnostic)
