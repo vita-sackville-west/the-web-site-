@@ -55,6 +55,13 @@ jobs:
             end
             puts 'Forced Manual signing with entitlements on all build configs'
 
+            attrs = project.root_object.attributes
+            attrs['TargetAttributes'] ||= {}
+            attrs['TargetAttributes'][target.uuid] ||= {}
+            attrs['TargetAttributes'][target.uuid]['ProvisioningStyle'] = 'Manual'
+            project.root_object.attributes = attrs
+            puts 'Forced project-level ProvisioningStyle to Manual (was overriding per-config CODE_SIGN_STYLE)'
+
             project.save
           "
 
@@ -88,6 +95,12 @@ jobs:
           echo "PROFILE_UUID=$uuid" >> $GITHUB_ENV
           echo "Profile UUID: $uuid"
 
+      - name: Show provisioning profile entitlements (diagnostic)
+        run: |
+          echo "--- Entitlements granted by the provisioning profile ---"
+          security cms -D -i ~/Library/MobileDevice/Provisioning\ Profiles/distribution.mobileprovision \
+            | plutil -extract Entitlements xml1 -o - -
+
       - name: Build iOS
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
@@ -108,6 +121,11 @@ jobs:
             CODE_SIGNING_ALLOWED[sdk=iphoneos*]=YES \
             CODE_SIGNING_REQUIRED[sdk=iphoneos*]=YES \
             OTHER_CODE_SIGN_FLAGS="--keychain $RUNNER_TEMP/build.keychain"
+
+      - name: Show signed app entitlements (diagnostic)
+        run: |
+          echo "--- Entitlements actually baked into the signed .app ---"
+          codesign -d --entitlements :- "$RUNNER_TEMP/App.xcarchive/Products/Applications/App.app"
 
       - name: Export IPA
         env:
