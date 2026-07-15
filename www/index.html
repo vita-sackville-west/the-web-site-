@@ -45,6 +45,8 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Space Mono',monosp
   cursor:pointer;position:relative;padding:0;border-radius:4px;}
 .top-btn:hover{background:rgba(0,229,255,0.1);}
 #inbox-btn{border-color:rgba(57,255,20,0.4);color:rgba(57,255,20,0.8);}
+.top-btn.has-unread{border-color:rgba(57,255,20,0.9);color:rgba(57,255,20,1);
+  box-shadow:0 0 10px rgba(57,255,20,0.6);transition:border-color 0.2s,color 0.2s,box-shadow 0.2s;}
 .inbox-badge-dot{display:none;position:absolute;top:-4px;right:-4px;width:10px;height:10px;
   border-radius:50%;background:var(--lime);border:2px solid var(--dark);}
 @media(max-width:700px){#top-bar{right:0;}}
@@ -134,6 +136,8 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Space Mono',monosp
   #profile-modal{width:calc(100% - 32px)!important;left:50%!important;margin-left:0!important;}
   #mobile-panel-btn{display:flex!important;}
   #inbox-btn{display:none;}
+  #zoom-row{display:none!important;}
+  #time-row-label{display:none!important;}
   /* Bigger tap targets on mobile */
   .vita-dot{width:14px!important;height:14px!important;}
   .ctrl-thumb,.time-thumb,.zoom-thumb{width:22px!important;height:22px!important;}
@@ -220,15 +224,15 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Space Mono',monosp
   color:rgba(255,245,250,0.15);letter-spacing:2px;padding:6px 0 2px;flex-shrink:0;background:#110820;}
 .rp-messages{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;background:#110820;}
 .rp-input-bar{display:flex;gap:8px;padding:8px 10px calc(14px + env(safe-area-inset-bottom));
-  border-top:2px solid rgba(255,245,250,0.1);flex-shrink:0;align-items:flex-end;
+  border-top:1px solid rgba(255,245,250,0.06);flex-shrink:0;align-items:flex-end;
   background:#110820;position:relative;z-index:2;}
-.rp-chat-input{flex:1;background:rgba(255,245,250,0.08);border:1px solid rgba(255,245,250,0.12);
-  border-radius:20px;color:var(--white);font-family:'Space Mono',monospace;font-size:13px;
-  padding:9px 16px;resize:none;outline:none;line-height:1.4;max-height:80px;
+.rp-chat-input{flex:1;background:rgba(255,245,250,0.06);border:2px solid rgba(255,245,250,0.15);
+  color:var(--white);font-family:'Space Mono',monospace;font-size:13px;
+  padding:8px 10px;resize:none;outline:none;line-height:1.4;max-height:80px;
   -webkit-user-select:text;user-select:text;touch-action:manipulation;
   cursor:text;position:relative;z-index:2;transition:background 0.15s,border-color 0.15s;}
-.rp-chat-input:focus{border-color:var(--pink);background:rgba(255,245,250,0.11);}
-.rp-chat-input::placeholder{color:rgba(255,245,250,0.3);}
+.rp-chat-input:focus{border-color:var(--pink);background:rgba(255,245,250,0.09);}
+.rp-chat-input::placeholder{color:rgba(255,245,250,0.25);}
 .rp-chat-send{background:var(--pink);border:none;color:var(--white);
   font-family:'VT323',monospace;font-size:20px;width:38px;height:38px;padding:0;
   cursor:pointer;flex-shrink:0;align-self:flex-end;border-radius:50%;
@@ -606,11 +610,11 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Space Mono',monosp
   <div id="scanlines"></div>
 
   <div id="top-bar">
-    <div id="site-logo">The Web(Site)</div>
+    <div id="site-logo">The Web</div>
     <div id="live-clock">—</div>
     <div id="top-right">
-      <button class="top-btn" id="see-self-btn" title="See yourself on map" style="border-color:rgba(200,160,255,0.4);color:rgba(200,160,255,0.7);">&#128065;</button>
-      <button class="top-btn" id="my-profile-btn" title="My profile" style="font-size:23px;">&#128100;</button>
+      <button class="top-btn" id="see-self-btn" title="See yourself on map" style="border-color:rgba(200,160,255,0.4);color:rgba(200,160,255,0.7);"><svg viewBox="0 0 8 8" width="16" height="16" shape-rendering="crispEdges" style="display:block;"><g fill="currentColor" fill-opacity="0.55"><rect x="2" y="0" width="1" height="1"/><rect x="3" y="0" width="1" height="1"/><rect x="4" y="0" width="1" height="1"/><rect x="5" y="0" width="1" height="1"/><rect x="1" y="1" width="1" height="1"/><rect x="6" y="1" width="1" height="1"/><rect x="0" y="2" width="1" height="1"/><rect x="7" y="2" width="1" height="1"/><rect x="0" y="3" width="1" height="1"/><rect x="7" y="3" width="1" height="1"/><rect x="0" y="4" width="1" height="1"/><rect x="7" y="4" width="1" height="1"/><rect x="1" y="5" width="1" height="1"/><rect x="6" y="5" width="1" height="1"/><rect x="2" y="6" width="1" height="1"/><rect x="3" y="6" width="1" height="1"/><rect x="4" y="6" width="1" height="1"/><rect x="5" y="6" width="1" height="1"/></g><g fill="currentColor"><rect x="3" y="2" width="1" height="1"/><rect x="4" y="2" width="1" height="1"/><rect x="2" y="3" width="1" height="1"/><rect x="3" y="3" width="1" height="1"/><rect x="4" y="3" width="1" height="1"/><rect x="5" y="3" width="1" height="1"/><rect x="3" y="4" width="1" height="1"/><rect x="4" y="4" width="1" height="1"/></g></svg></button>
+      <button class="top-btn" id="my-profile-btn" title="My profile"><svg viewBox="0 0 8 8" width="16" height="16" shape-rendering="crispEdges" style="display:block;"><g fill="currentColor"><rect x="2" y="0" width="1" height="1"/><rect x="3" y="0" width="1" height="1"/><rect x="4" y="0" width="1" height="1"/><rect x="5" y="0" width="1" height="1"/><rect x="1" y="1" width="1" height="1"/><rect x="2" y="1" width="1" height="1"/><rect x="3" y="1" width="1" height="1"/><rect x="4" y="1" width="1" height="1"/><rect x="5" y="1" width="1" height="1"/><rect x="6" y="1" width="1" height="1"/><rect x="1" y="2" width="1" height="1"/><rect x="2" y="2" width="1" height="1"/><rect x="3" y="2" width="1" height="1"/><rect x="4" y="2" width="1" height="1"/><rect x="5" y="2" width="1" height="1"/><rect x="6" y="2" width="1" height="1"/><rect x="2" y="3" width="1" height="1"/><rect x="3" y="3" width="1" height="1"/><rect x="4" y="3" width="1" height="1"/><rect x="5" y="3" width="1" height="1"/><rect x="3" y="4" width="1" height="1"/><rect x="4" y="4" width="1" height="1"/><rect x="0" y="5" width="1" height="1"/><rect x="1" y="5" width="1" height="1"/><rect x="6" y="5" width="1" height="1"/><rect x="7" y="5" width="1" height="1"/><rect x="0" y="6" width="1" height="1"/><rect x="1" y="6" width="1" height="1"/><rect x="2" y="6" width="1" height="1"/><rect x="3" y="6" width="1" height="1"/><rect x="4" y="6" width="1" height="1"/><rect x="5" y="6" width="1" height="1"/><rect x="6" y="6" width="1" height="1"/><rect x="7" y="6" width="1" height="1"/><rect x="0" y="7" width="1" height="1"/><rect x="1" y="7" width="1" height="1"/><rect x="2" y="7" width="1" height="1"/><rect x="3" y="7" width="1" height="1"/><rect x="4" y="7" width="1" height="1"/><rect x="5" y="7" width="1" height="1"/><rect x="6" y="7" width="1" height="1"/><rect x="7" y="7" width="1" height="1"/></g></svg></button>
       <button class="top-btn" id="inbox-btn" title="Messages">
         <span style="font-size:21px;">&#9776;</span><span class="inbox-badge-dot"></span>
       </button>
@@ -731,7 +735,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Space Mono',monosp
         <div id="station-search-results" style="display:none;position:absolute;bottom:100%;left:0;right:0;background:#110820;border:1px solid rgba(255,110,180,0.3);max-height:200px;overflow-y:auto;z-index:100;"></div>
       </div>
     </div>
-    <div class="ctrl-row">
+    <div class="ctrl-row" id="zoom-row">
       <div class="ctrl-label">ZOOM</div>
       <div class="ctrl-track" id="zoom-track">
         <div class="ctrl-track-bg"></div>
@@ -739,8 +743,8 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Space Mono',monosp
         <div class="zoom-thumb" id="zoom-thumb"></div>
       </div>
     </div>
-    <div class="ctrl-row">
-      <div class="ctrl-label">TIME</div>
+    <div class="ctrl-row" id="time-row">
+      <div class="ctrl-label" id="time-row-label">TIME</div>
       <div class="ctrl-track" id="time-track">
         <div class="ctrl-track-bg"></div>
         <div class="time-fill" id="time-fill"></div>
@@ -2076,6 +2080,8 @@ document.getElementById('rp-chat-input').addEventListener('input',function(){thi
 function updateInboxBadge(){
   const has=Object.values(USERS).some(u=>u.hasUnread);
   document.querySelectorAll('.inbox-badge-dot').forEach(el=>{el.style.display=has?'block':'none';});
+  document.getElementById('inbox-btn')?.classList.toggle('has-unread',has);
+  document.getElementById('mobile-panel-btn')?.classList.toggle('has-unread',has);
 }
 
 //  MY PROFILE 
