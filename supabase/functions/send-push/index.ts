@@ -141,7 +141,7 @@ Deno.serve(async (req) => {
             payload: {
               aps: {
                 alert: { title, body },
-                sound: "default",
+                sound: isBlip ? "blip.wav" : "default",
                 badge: 1,
               },
             },
