@@ -1041,12 +1041,14 @@ async function setupPushNotifications(){
       FirebaseMessaging.addListener('notificationReceived', (event) => {});
     } catch(e) {}
 
-    // Handle tap on notification
+    // Handle tap on notification — jump straight to the inbox
     try {
       FirebaseMessaging.addListener('notificationActionPerformed', (event) => {
         try {
-          const data = event.notification?.data;
-          if(data && data.senderId) rpOpenProfile(data.senderId);
+          setRpView('list');
+          switchRpTab('inbox');
+          renderRpInbox();
+          if(isMobile()) openMobilePanel();
         } catch(e) {}
       });
     } catch(e) {}
