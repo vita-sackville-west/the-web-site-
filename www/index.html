@@ -731,7 +731,8 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Space Mono',monosp
   <div id="bottom-controls">
     <div class="ctrl-row" style="margin-bottom:5px;">
       <div id="station-search-wrap" style="flex:1;position:relative;">
-        <input id="station-search-input" placeholder="&#128269; find a station..." style="width:100%;background:rgba(255,245,250,0.06);border:1px solid rgba(255,110,180,0.25);color:var(--white);font-family:'VT323',monospace;font-size:15px;padding:4px 10px;outline:none;letter-spacing:1px;box-sizing:border-box;">
+        <svg viewBox="0 0 8 8" width="14" height="14" shape-rendering="crispEdges" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);pointer-events:none;z-index:1;"><g fill="rgba(255,110,180,0.55)"><rect x="1" y="0" width="1" height="1"/><rect x="2" y="0" width="1" height="1"/><rect x="3" y="0" width="1" height="1"/><rect x="0" y="1" width="1" height="1"/><rect x="4" y="1" width="1" height="1"/><rect x="0" y="2" width="1" height="1"/><rect x="4" y="2" width="1" height="1"/><rect x="0" y="3" width="1" height="1"/><rect x="4" y="3" width="1" height="1"/><rect x="1" y="4" width="1" height="1"/><rect x="2" y="4" width="1" height="1"/><rect x="3" y="4" width="1" height="1"/><rect x="4" y="5" width="1" height="1"/><rect x="5" y="6" width="1" height="1"/><rect x="6" y="7" width="1" height="1"/></g></svg>
+        <input id="station-search-input" placeholder="find a station..." style="width:100%;background:rgba(255,245,250,0.06);border:1px solid rgba(255,110,180,0.25);color:var(--white);font-family:'VT323',monospace;font-size:15px;padding:4px 10px 4px 28px;outline:none;letter-spacing:1px;box-sizing:border-box;">
         <div id="station-search-results" style="display:none;position:absolute;bottom:100%;left:0;right:0;background:#110820;border:1px solid rgba(255,110,180,0.3);max-height:200px;overflow-y:auto;z-index:100;"></div>
       </div>
     </div>
@@ -2091,6 +2092,49 @@ document.getElementById('rp-close')?.addEventListener('click',()=>setRpView('lis
 document.getElementById('rp-profile-close')?.addEventListener('click',()=>setRpView('list'));
 document.getElementById('rp-profile-back').addEventListener('click',()=>setRpView('list'));
 document.getElementById('rp-chat-back').addEventListener('click',()=>{setRpView('list');renderRpInbox();});
+
+// ── SWIPE GESTURES ───────────────────────────────────────────────
+function attachSwipe(el, {onSwipeLeft, onSwipeRight, onSwipeDown, requireTopForDown}={}){
+  if(!el) return;
+  let startX=0, startY=0, startScrollTop=0, tracking=false;
+  const THRESH=60;
+  el.addEventListener('touchstart', e=>{
+    if(e.touches.length!==1) return;
+    startX=e.touches[0].clientX; startY=e.touches[0].clientY;
+    startScrollTop=el.scrollTop||0;
+    tracking=true;
+  }, {passive:true});
+  el.addEventListener('touchend', e=>{
+    if(!tracking) return;
+    tracking=false;
+    const t=e.changedTouches[0];
+    const dx=t.clientX-startX, dy=t.clientY-startY;
+    const absDx=Math.abs(dx), absDy=Math.abs(dy);
+    if(absDx>absDy && absDx>THRESH){
+      if(dx<0 && onSwipeLeft) onSwipeLeft();
+      else if(dx>0 && onSwipeRight) onSwipeRight();
+    } else if(absDy>absDx && dy>THRESH && onSwipeDown){
+      if(!requireTopForDown || startScrollTop<=0) onSwipeDown();
+    }
+  }, {passive:true});
+}
+
+// Swipe between MESSAGES and PEOPLE tabs
+attachSwipe(document.getElementById('rp-content'), {
+  onSwipeLeft: ()=>{ if(rpTab==='inbox') switchRpTab('people'); },
+  onSwipeRight: ()=>{ if(rpTab==='people') switchRpTab('inbox'); }
+});
+
+// Swipe right on an open chat to go back to the inbox; swipe down (from the
+// top of the message list) to dismiss the keyboard
+attachSwipe(document.getElementById('rp-messages'), {
+  onSwipeRight: ()=>{ setRpView('list'); renderRpInbox(); },
+  onSwipeDown: ()=>{ document.getElementById('rp-chat-input')?.blur(); },
+  requireTopForDown: true
+});
+attachSwipe(document.querySelector('.rp-chat-top'), {
+  onSwipeRight: ()=>{ setRpView('list'); renderRpInbox(); }
+});
 document.getElementById('rp-msg-btn').addEventListener('click',()=>rpOpenChat(currentProfileId));
 document.getElementById('rp-chat-av').addEventListener('click',()=>rpOpenProfile(currentProfileId));
 document.getElementById('rp-chat-info').addEventListener('click',()=>rpOpenProfile(currentProfileId));
