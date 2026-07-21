@@ -688,7 +688,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Space Mono',monosp
         </div>
         <div style="flex-shrink:0;padding:6px 14px calc(10px + env(safe-area-inset-bottom));border-top:1px solid rgba(150,40,220,0.1);position:sticky;bottom:0;background:#1B1B20;z-index:20;">
           <div style="display:flex;gap:6px;">
-            <button id="rp-blip-btn" class="blip-btn" title="Blip" style="flex:0 0 44px;height:44px;min-height:44px;">
+            <button id="rp-blip-btn" class="blip-btn" title="X" style="flex:0 0 44px;height:44px;min-height:44px;">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                 <circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/>
                 <circle cx="12" cy="12" r="5" stroke-dasharray="2 2" opacity="0.6"/>
@@ -870,7 +870,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Space Mono',monosp
     <div class="modal-hours" id="modal-hours"></div>
   </div>
   <div class="modal-actions">
-    <button id="modal-blip-btn" class="blip-btn" title="Blip" style="width:44px;height:44px;flex-shrink:0;">
+    <button id="modal-blip-btn" class="blip-btn" title="X" style="width:44px;height:44px;flex-shrink:0;">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
         <circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/>
         <circle cx="12" cy="12" r="5" stroke-dasharray="2 2" opacity="0.6"/>
@@ -1986,7 +1986,7 @@ function rpOpenProfile(uid){
   document.getElementById('rp-profile-username').textContent=u.username?'@'+u.username:'';
   document.getElementById('rp-profile-station').textContent=st?'@ '+st.name:'';
   document.getElementById('rp-hours').innerHTML=(u.hours||[]).map(h=>`<div class="rp-hour-chip ${hoursInBlock(currentBlockIndex).includes(h)?'current':''}">${fmtH(h)}</div>`).join('');
-  document.getElementById('rp-blip-btn').title='Send '+(u.name||u.username||'them')+' a blip';
+  document.getElementById('rp-blip-btn').title='Send '+(u.name||u.username||'them')+' an X';
   
   // Build details line
   const details = [];
@@ -2050,9 +2050,9 @@ async function rpLoadMessages(uid){
     const diffM=Math.floor((now-d)/60000);
     const tStr=diffM<1?'just now':diffM<60?diffM+'m ago':diffM<1440?Math.floor(diffM/60)+'h ago':(d.getHours()%12||12)+':'+(d.getMinutes().toString().padStart(2,'0'))+' '+(d.getHours()<12?'AM':'PM');
     // Special blip rendering
-    if(m.content==='[BLIP]'){
+    if(m.content==='[X]'){
       w.style.cssText='text-align:center;padding:6px 0;font-family:VT323,monospace;font-size:16px;color:rgba(168,120,255,0.5);letter-spacing:2px;';
-      w.innerHTML=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(168,120,255,0.5)" stroke-width="1.5" style="vertical-align:middle;margin-right:4px;"><circle cx="12" cy="12" r="2" fill="rgba(168,120,255,0.5)" stroke="none"/><circle cx="12" cy="12" r="5" stroke-dasharray="2 2"/><circle cx="12" cy="12" r="9" stroke-dasharray="1 3" opacity="0.5"/></svg>${mine?'you blipped':'blipped you'} &bull; ${tStr}`;
+      w.innerHTML=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(168,120,255,0.5)" stroke-width="1.5" style="vertical-align:middle;margin-right:4px;"><circle cx="12" cy="12" r="2" fill="rgba(168,120,255,0.5)" stroke="none"/><circle cx="12" cy="12" r="5" stroke-dasharray="2 2"/><circle cx="12" cy="12" r="9" stroke-dasharray="1 3" opacity="0.5"/></svg>${mine?'you sent an x':'sent you an x'} &bull; ${tStr}`;
     } else {
       w.className='msg '+(mine?'mine':'theirs');
       w.innerHTML=`<div class="msg-bubble">${m.content}</div><div class="msg-time">${tStr}</div>`;
@@ -2332,7 +2332,7 @@ async function sendBlip(uid){
   const {error} = await sb.from('messages').insert({
     match_id: matchId,
     sender_id: currentUser.id,
-    content: '[BLIP]'
+    content: '[X]'
   });
 
   if(error){ console.error('blip error:', error); return; }
@@ -2342,7 +2342,7 @@ async function sendBlip(uid){
 
   // Show toast
   const toast = document.getElementById('blip-toast');
-  toast.textContent = 'BLIP SENT TO ' + name.toUpperCase();
+  toast.textContent = 'X SENT TO ' + name.toUpperCase();
   toast.classList.add('show');
   setTimeout(()=>toast.classList.remove('show'), 2500);
 
@@ -2756,7 +2756,7 @@ function subscribeRealtime(){
       if(USERS[senderId]){
         USERS[senderId].messages=USERS[senderId].messages||[];
         USERS[senderId].messages.push({mine:false,text:msg.content,ts:new Date(msg.created_at).getTime()});
-        const isBlip=msg.content==='[BLIP]';
+        const isBlip=msg.content==='[X]';
         if(isBlip) playBlipSound();
         if(currentProfileId===senderId&&rpView==='chat'){
           await rpLoadMessages(senderId);

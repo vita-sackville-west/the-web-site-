@@ -116,9 +116,9 @@ Deno.serve(async (req) => {
   }
 
   const senderName = sender?.name || sender?.username || "Someone";
-  const isBlip = row.content === "[BLIP]";
-  const title = isBlip ? "Blip" : senderName;
-  const body = isBlip ? `${senderName} sent you a blip` : row.content;
+  const isBlip = row.content === "[X]";
+  const title = isBlip ? "X" : senderName;
+  const body = isBlip ? `${senderName} sent you an x` : row.content;
 
   const accessToken = await getAccessToken();
   const fcmRes = await fetch(
