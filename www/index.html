@@ -367,6 +367,10 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Space Mono',monosp
   font-size:21px;color:rgba(var(--white-rgb),0.15);letter-spacing:2px;line-height:2.2;}
 
 /* Profile cards in right panel */
+.rp-station-group-header{font-family:'VT323',monospace;font-size:16px;letter-spacing:2px;
+  color:rgba(var(--cyan-rgb),0.8);border-bottom:1px solid rgba(var(--cyan-rgb),0.25);
+  padding:10px 2px 5px;margin-top:4px;}
+.rp-station-group-header:first-of-type{margin-top:0;}
 .rp-profile-card{display:flex;align-items:center;gap:10px;padding:10px 12px;margin-bottom:8px;
   border:2px solid rgba(var(--white-rgb),0.06);background:rgba(var(--white-rgb),0.02);
   cursor:pointer;transition:all 0.1s;}
@@ -2004,6 +2008,32 @@ async function renderRpInbox(){
 }
 
 
+function renderProfileCard(uid, u, st){
+  const avHTML=u.photo_url?`<img src="${u.photo_url}" alt="">`:((u.name||'?').charAt(0).toUpperCase());
+  const el=document.createElement('div');
+  el.className='rp-profile-card'+(u.hasUnread?' has-message':'');
+  el.innerHTML=`
+    <div class="rp-avatar">${avHTML}${u.hasUnread?'<div class="msg-dot"></div>':''}</div>
+    <div class="rp-info">
+      <div class="rp-name">${u.name||u.username||'anonymous'}${u.age?', '+u.age:''}</div>
+      <div class="rp-meta">
+        ${st?`<span class="rp-station">@ ${st.name}</span>`:''}
+        <span class="rp-avail">FREE ${fmtBlock(currentBlockIndex)}</span>
+      </div>
+    </div>`;
+  el.addEventListener('click',()=>rpOpenProfile(uid));
+  return el;
+}
+
+// Haversine great-circle distance in km between two lat/lng points
+function stationDistanceKm(a,b){
+  const R=6371;
+  const dLat=(b.lat-a.lat)*Math.PI/180;
+  const dLng=(b.lng-a.lng)*Math.PI/180;
+  const s=Math.sin(dLat/2)**2 + Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R*2*Math.atan2(Math.sqrt(s),Math.sqrt(1-s));
+}
+
 async function renderRpPeople(){
   const content=document.getElementById('rp-content');
   content.innerHTML='';
@@ -2023,13 +2053,15 @@ async function renderRpPeople(){
 
   // Filter bar
   const filterBar=document.createElement('div');
-  filterBar.style.cssText='padding:0 0 10px;';
+  filterBar.style.cssText='padding:0 0 10px;display:flex;gap:8px;';
   const filterLabel=peopleStationFilterIds.size>0
     ? `FILTER: ${peopleStationFilterIds.size} STATION${peopleStationFilterIds.size>1?'S':''}`
     : 'FILTER BY STATIONS';
-  filterBar.innerHTML=`<button id="rp-filter-stations-btn" style="width:100%;background:${peopleStationFilterIds.size>0?'rgba(var(--cyan-rgb),0.12)':'transparent'};border:1px solid ${peopleStationFilterIds.size>0?'rgb(var(--cyan-rgb))':'rgba(var(--cyan-rgb),0.3)'};color:${peopleStationFilterIds.size>0?'rgb(var(--cyan-rgb))':'rgba(var(--cyan-rgb),0.6)'};font-family:'VT323',monospace;font-size:16px;letter-spacing:1px;padding:8px;cursor:pointer;">⚲ ${filterLabel}</button>`;
+  filterBar.innerHTML=`<button id="rp-filter-stations-btn" style="flex:1;background:${peopleStationFilterIds.size>0?'rgba(var(--cyan-rgb),0.12)':'transparent'};border:1px solid ${peopleStationFilterIds.size>0?'rgb(var(--cyan-rgb))':'rgba(var(--cyan-rgb),0.3)'};color:${peopleStationFilterIds.size>0?'rgb(var(--cyan-rgb))':'rgba(var(--cyan-rgb),0.6)'};font-family:'VT323',monospace;font-size:16px;letter-spacing:1px;padding:8px;cursor:pointer;">⚲ ${filterLabel}</button>
+    <button id="rp-filter-distance-btn" style="flex:1;background:${peopleDistanceMode?'rgba(var(--cyan-rgb),0.12)':'transparent'};border:1px solid ${peopleDistanceMode?'rgb(var(--cyan-rgb))':'rgba(var(--cyan-rgb),0.3)'};color:${peopleDistanceMode?'rgb(var(--cyan-rgb))':'rgba(var(--cyan-rgb),0.6)'};font-family:'VT323',monospace;font-size:16px;letter-spacing:1px;padding:8px;cursor:pointer;">📍 ${peopleDistanceMode?'BY DISTANCE':'FILTER BY DISTANCE'}</button>`;
   content.appendChild(filterBar);
   document.getElementById('rp-filter-stations-btn').addEventListener('click',openStationFilterModal);
+  document.getElementById('rp-filter-distance-btn').addEventListener('click',toggleDistanceFilter);
 
   if(!available.length){
     const empty=document.createElement('div');
@@ -2040,22 +2072,92 @@ async function renderRpPeople(){
     content.appendChild(empty);
     return;
   }
+
+  if(peopleDistanceMode && mySelectedStation){
+    const groups={};
+    available.forEach(([uid,u])=>{
+      const st=stationData.find(s=>s.userIds&&s.userIds.includes(uid));
+      if(!st) return;
+      if(!groups[st.id]) groups[st.id]={station:st,entries:[]};
+      groups[st.id].entries.push([uid,u]);
+    });
+    const sorted=Object.values(groups)
+      .map(g=>({...g,dist:stationDistanceKm(mySelectedStation,g.station)}))
+      .sort((a,b)=>a.dist-b.dist);
+    sorted.forEach(g=>{
+      const header=document.createElement('div');
+      header.className='rp-station-group-header';
+      header.textContent=g.station.id===mySelectedStation.id
+        ? `${g.station.name} (YOUR STATION)`
+        : `${g.station.name} — ${g.dist<1?Math.round(g.dist*1000)+'m':g.dist.toFixed(1)+'km'}`;
+      content.appendChild(header);
+      g.entries.forEach(([uid,u])=>content.appendChild(renderProfileCard(uid,u,g.station)));
+    });
+    return;
+  }
+
   available.forEach(([uid,u])=>{
     const st=stationData.find(s=>s.userIds&&s.userIds.includes(uid));
-    const avHTML=u.photo_url?`<img src="${u.photo_url}" alt="">`:((u.name||'?').charAt(0).toUpperCase());
-    const el=document.createElement('div');
-    el.className='rp-profile-card'+(u.hasUnread?' has-message':'');
-    el.innerHTML=`
-      <div class="rp-avatar">${avHTML}${u.hasUnread?'<div class="msg-dot"></div>':''}</div>
-      <div class="rp-info">
-        <div class="rp-name">${u.name||u.username||'anonymous'}${u.age?', '+u.age:''}</div>
-        <div class="rp-meta">
-          ${st?`<span class="rp-station">@ ${st.name}</span>`:''}
-          <span class="rp-avail">FREE ${fmtBlock(currentBlockIndex)}</span>
+    content.appendChild(renderProfileCard(uid,u,st));
+  });
+}
+
+// ── DISTANCE FILTER ────────────────────────────────────────────
+let peopleDistanceMode = false;
+
+function toggleDistanceFilter(){
+  if(peopleDistanceMode){ peopleDistanceMode=false; renderRpPeople(); return; }
+  if(!mySelectedStation){ openSetStationPrompt(()=>{ peopleDistanceMode=true; renderRpPeople(); }); return; }
+  peopleDistanceMode=true;
+  renderRpPeople();
+}
+
+function openSetStationPrompt(onDone){
+  let modal=document.getElementById('set-station-modal');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='set-station-modal';
+    modal.style.cssText='position:fixed;inset:0;z-index:200;background:rgba(var(--panel2-rgb),0.92);display:flex;align-items:center;justify-content:center;padding:20px;';
+    modal.innerHTML=`
+      <div style="background:rgb(var(--dark-rgb));border:2px solid rgb(var(--pink-rgb));max-width:380px;width:100%;max-height:80vh;display:flex;flex-direction:column;">
+        <div style="padding:14px 16px;border-bottom:2px solid rgb(var(--pink-rgb));display:flex;align-items:center;justify-content:space-between;">
+          <div style="font-family:'VT323',monospace;font-size:23px;color:rgb(var(--white-rgb));letter-spacing:1px;">SET YOUR STATION</div>
+          <button id="set-station-close" style="background:none;border:none;color:rgba(var(--white-rgb),0.6);font-size:23px;cursor:pointer;">✕</button>
         </div>
+        <div style="padding:10px 16px 0;font-family:'VT323',monospace;font-size:15px;color:rgba(var(--lilac-rgb),0.7);">Choose a station to filter people by distance from.</div>
+        <div style="padding:10px 16px;">
+          <input id="set-station-search" class="ob-station-search" placeholder="search stations..." style="width:100%;">
+        </div>
+        <div id="set-station-list" style="flex:1;overflow-y:auto;padding:0 16px 16px;"></div>
       </div>`;
-    el.addEventListener('click',()=>rpOpenProfile(uid));
-    content.appendChild(el);
+    document.body.appendChild(modal);
+    document.getElementById('set-station-close').addEventListener('click',()=>modal.style.display='none');
+    document.getElementById('set-station-search').addEventListener('input',(e)=>renderSetStationList(e.target.value));
+  } else {
+    modal.style.display='flex';
+  }
+  modal.dataset.onDone = '';
+  modal._onDone = onDone;
+  renderSetStationList('');
+}
+
+function renderSetStationList(query){
+  const listEl=document.getElementById('set-station-list');
+  const q=query.toLowerCase().trim();
+  const matches=(q?stationData.filter(s=>s.name.toLowerCase().includes(q)):stationData).slice(0,25);
+  listEl.innerHTML=matches.map(s=>`<div class="ob-station-item" data-id="${s.id}" style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;"><span style="width:8px;height:8px;border-radius:50%;background:${s.line_color};flex-shrink:0;display:inline-block;"></span>${s.name}</div>`).join('');
+  listEl.querySelectorAll('.ob-station-item').forEach(el=>{
+    el.addEventListener('click', async ()=>{
+      const st=stationData.find(s=>s.id===el.dataset.id);
+      mySelectedStation=st;
+      if(currentUser) await sb.from('users').update({station_id:st.id}).eq('id',currentUser.id);
+      const selEl=document.getElementById('my-station-selected');
+      if(selEl) selEl.textContent='@ '+st.name;
+      const modal=document.getElementById('set-station-modal');
+      const onDone=modal._onDone;
+      modal.style.display='none';
+      if(onDone) onDone();
+    });
   });
 }
 
