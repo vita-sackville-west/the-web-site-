@@ -149,8 +149,15 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Space Mono',monosp
   cursor:pointer;position:relative;padding:0;border-radius:4px;}
 .top-btn:hover{background:rgba(var(--cyan-rgb),0.1);}
 #inbox-btn{border-color:rgba(var(--lime-rgb),0.4);color:rgba(var(--lime-rgb),0.8);}
-.top-btn.has-unread{border-color:rgba(var(--lime-rgb),0.9);color:rgba(var(--lime-rgb),1);
-  box-shadow:0 0 10px rgba(var(--lime-rgb),0.6);transition:border-color 0.2s,color 0.2s,box-shadow 0.2s;}
+.top-btn.has-unread{border-color:rgba(var(--lime-rgb),1);color:rgba(var(--lime-rgb),1);
+  animation:unread-pulse 1.6s ease-in-out infinite;}
+@keyframes unread-pulse{
+  0%,100%{box-shadow:0 0 6px 1px rgba(var(--lime-rgb),0.5);}
+  50%{box-shadow:0 0 16px 5px rgba(var(--lime-rgb),0.9);}
+}
+@media(prefers-reduced-motion:reduce){
+  .top-btn.has-unread{animation:none;box-shadow:0 0 12px 3px rgba(var(--lime-rgb),0.7);}
+}
 .inbox-badge-dot{display:none;position:absolute;top:-4px;right:-4px;width:10px;height:10px;
   border-radius:50%;background:rgb(var(--lime-rgb));border:2px solid rgb(var(--dark-rgb));}
 @media(max-width:700px){#top-bar{right:0;}}
@@ -801,6 +808,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Space Mono',monosp
           <div id="rp-profile-details" style="margin-bottom:10px;font-family:'VT323',monospace;font-size:17px;color:rgba(var(--pale2-rgb),0.78);letter-spacing:1px;line-height:2;"></div>
           <div class="rp-avail-label">AVAILABLE</div>
           <div class="rp-hours" id="rp-hours"></div>
+          <div id="rp-personal-ad" style="display:none;margin-top:4px;padding:10px 12px;background:rgba(var(--white-rgb),0.04);border:1px solid rgba(var(--white-rgb),0.1);font-family:'Space Mono',monospace;font-size:14px;line-height:1.5;color:rgba(var(--white-rgb),0.85);white-space:pre-wrap;"></div>
         </div>
         <div style="flex-shrink:0;padding:6px 14px calc(10px + env(safe-area-inset-bottom));border-top:1px solid rgba(var(--hot-rgb),0.1);position:sticky;bottom:0;background:rgb(var(--panel-rgb));z-index:20;">
           <div style="display:flex;gap:6px;">
@@ -916,6 +924,8 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Space Mono',monosp
 
       <div class="field-label">NAME</div>
       <input class="vita-field" id="my-name-field" placeholder="your name">
+      <div class="field-label">PERSONAL AD</div>
+      <textarea class="vita-field" id="my-personalad-field" placeholder="Personal ad: offering, seeking and hard nos&hellip;" maxlength="280" rows="3" style="resize:none;"></textarea>
       <div class="field-label">USERNAME</div>
       <input class="vita-field" id="my-username-field" placeholder="@username — this is what people see, make it you" style="letter-spacing:1px;">
       <div class="field-label">AGE</div>
@@ -998,6 +1008,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Space Mono',monosp
   <div class="modal-body">
     <div class="modal-avail-label">AVAILABLE</div>
     <div class="modal-hours" id="modal-hours"></div>
+    <div id="modal-personal-ad" style="display:none;margin-top:4px;padding:10px 12px;background:rgba(var(--white-rgb),0.04);border:1px solid rgba(var(--white-rgb),0.1);font-family:'Space Mono',monospace;font-size:14px;line-height:1.5;color:rgba(var(--white-rgb),0.85);white-space:pre-wrap;"></div>
   </div>
   <div class="modal-actions">
     <button id="modal-blip-btn" class="blip-btn" title="X" style="width:44px;height:44px;flex-shrink:0;">
@@ -1080,6 +1091,33 @@ document.querySelectorAll('.theme-swatch').forEach(btn=>{
     }
   });
 });
+
+//  NOTIFICATION TAP (registered as early as possible)
+// If a push notification cold-launches the app, Capacitor/Firebase can fire
+// notificationActionPerformed before the sign-in flow finishes, so this is
+// registered immediately at script load rather than waiting on the delayed
+// setupPushNotifications() token flow, and queues the navigation if the
+// user session isn't ready yet.
+let pendingNotificationTap = false;
+function goToInboxFromNotification(){
+  if(typeof currentUser==='undefined' || !currentUser){ pendingNotificationTap = true; return; }
+  try {
+    setRpView('list');
+    switchRpTab('inbox');
+    renderRpInbox();
+    if(isMobile()) openMobilePanel();
+  } catch(e) { console.warn('goToInboxFromNotification failed:', e); }
+}
+(function registerNotificationTapListener(){
+  try {
+    if(!window.Capacitor || !window.Capacitor.isNativePlatform()) return;
+    const FirebaseMessaging = window.Capacitor.Plugins.FirebaseMessaging;
+    if(!FirebaseMessaging) return;
+    FirebaseMessaging.addListener('notificationActionPerformed', () => {
+      goToInboxFromNotification();
+    });
+  } catch(e) {}
+})();
 
 //  SUPABASE
 const SUPABASE_URL = 'https://qfdldsdeillxsmhlgmhh.supabase.co';
@@ -1185,18 +1223,9 @@ async function setupPushNotifications(){
     try {
       FirebaseMessaging.addListener('notificationReceived', (event) => {});
     } catch(e) {}
-
-    // Handle tap on notification — jump straight to the inbox
-    try {
-      FirebaseMessaging.addListener('notificationActionPerformed', (event) => {
-        try {
-          setRpView('list');
-          switchRpTab('inbox');
-          renderRpInbox();
-          if(isMobile()) openMobilePanel();
-        } catch(e) {}
-      });
-    } catch(e) {}
+    // (notificationActionPerformed is registered eagerly at script load —
+    // see registerNotificationTapListener — so it isn't missed if a tap
+    // cold-launches the app before this delayed token flow runs.)
 
   } catch(e) {
     console.warn('setupPushNotifications outer catch:', e);
@@ -1607,7 +1636,7 @@ async function loadMapUsers() {
   const today = new Date().toISOString().split('T')[0];
   const nowHour = new Date().getHours();
   const {data:avail} = await sb.from('availability')
-    .select('user_id, station_id, hour, users(id,username,name,age,pronouns,photo_url,photo_urls)')
+    .select('user_id, station_id, hour, users(id,username,name,age,pronouns,photo_url,photo_urls,personal_ad)')
     .eq('date',today);
   if(!avail) return;
   // Reset
@@ -1743,6 +1772,13 @@ function openProfileModal(uid){
   document.getElementById('modal-username').textContent=(u.username?'@'+u.username:'')+(u.pronouns?' · '+u.pronouns:'');
   document.getElementById('modal-station').textContent=st?' '+st.name:'';
   document.getElementById('modal-hours').innerHTML=(u.hours||[]).map(h=>`<div class="modal-hour-chip ${hoursInBlock(currentBlockIndex).includes(h)?'current':''}">${fmtH(h)}</div>`).join('');
+  const modalPersonalAdEl=document.getElementById('modal-personal-ad');
+  if(u.personal_ad&&u.personal_ad.trim()){
+    modalPersonalAdEl.textContent=u.personal_ad;
+    modalPersonalAdEl.style.display='block';
+  } else {
+    modalPersonalAdEl.style.display='none';
+  }
   document.getElementById('profile-modal').classList.add('show');
   document.getElementById('modal-overlay').classList.add('show');
 }
@@ -2007,6 +2043,9 @@ async function renderRpInbox(){
   updateInboxBadge();
 }
 
+// Pixel-art location-pin icon, matching the eye/profile/search icon style.
+const PIN_ICON_SVG = '<svg viewBox="0 0 8 8" width="14" height="14" shape-rendering="crispEdges" style="vertical-align:-2px;margin-right:2px;"><g fill="currentColor" fill-opacity="0.55"><rect x="2" y="0" width="1" height="1"/><rect x="3" y="0" width="1" height="1"/><rect x="4" y="0" width="1" height="1"/><rect x="5" y="0" width="1" height="1"/><rect x="1" y="1" width="1" height="1"/><rect x="6" y="1" width="1" height="1"/><rect x="0" y="2" width="1" height="1"/><rect x="7" y="2" width="1" height="1"/><rect x="0" y="3" width="1" height="1"/><rect x="7" y="3" width="1" height="1"/><rect x="1" y="4" width="1" height="1"/><rect x="6" y="4" width="1" height="1"/><rect x="2" y="5" width="1" height="1"/><rect x="3" y="5" width="1" height="1"/><rect x="4" y="5" width="1" height="1"/><rect x="5" y="5" width="1" height="1"/><rect x="3" y="6" width="1" height="1"/><rect x="4" y="6" width="1" height="1"/><rect x="3" y="7" width="1" height="1"/><rect x="4" y="7" width="1" height="1"/></g></svg>';
+
 
 function renderProfileCard(uid, u, st){
   const avHTML=u.photo_url?`<img src="${u.photo_url}" alt="">`:((u.name||'?').charAt(0).toUpperCase());
@@ -2057,8 +2096,8 @@ async function renderRpPeople(){
   const filterLabel=peopleStationFilterIds.size>0
     ? `FILTER: ${peopleStationFilterIds.size} STATION${peopleStationFilterIds.size>1?'S':''}`
     : 'FILTER BY STATIONS';
-  filterBar.innerHTML=`<button id="rp-filter-stations-btn" style="flex:1;background:${peopleStationFilterIds.size>0?'rgba(var(--cyan-rgb),0.12)':'transparent'};border:1px solid ${peopleStationFilterIds.size>0?'rgb(var(--cyan-rgb))':'rgba(var(--cyan-rgb),0.3)'};color:${peopleStationFilterIds.size>0?'rgb(var(--cyan-rgb))':'rgba(var(--cyan-rgb),0.6)'};font-family:'VT323',monospace;font-size:16px;letter-spacing:1px;padding:8px;cursor:pointer;">⚲ ${filterLabel}</button>
-    <button id="rp-filter-distance-btn" style="flex:1;background:${peopleDistanceMode?'rgba(var(--cyan-rgb),0.12)':'transparent'};border:1px solid ${peopleDistanceMode?'rgb(var(--cyan-rgb))':'rgba(var(--cyan-rgb),0.3)'};color:${peopleDistanceMode?'rgb(var(--cyan-rgb))':'rgba(var(--cyan-rgb),0.6)'};font-family:'VT323',monospace;font-size:16px;letter-spacing:1px;padding:8px;cursor:pointer;">⚲ ${peopleDistanceMode?'BY DISTANCE':'FILTER BY DISTANCE'}</button>`;
+  filterBar.innerHTML=`<button id="rp-filter-stations-btn" style="flex:1;background:${peopleStationFilterIds.size>0?'rgba(var(--cyan-rgb),0.12)':'transparent'};border:1px solid ${peopleStationFilterIds.size>0?'rgb(var(--cyan-rgb))':'rgba(var(--cyan-rgb),0.3)'};color:${peopleStationFilterIds.size>0?'rgb(var(--cyan-rgb))':'rgba(var(--cyan-rgb),0.6)'};font-family:'VT323',monospace;font-size:16px;letter-spacing:1px;padding:8px;cursor:pointer;">${PIN_ICON_SVG}${filterLabel}</button>
+    <button id="rp-filter-distance-btn" style="flex:1;background:${peopleDistanceMode?'rgba(var(--cyan-rgb),0.12)':'transparent'};border:1px solid ${peopleDistanceMode?'rgb(var(--cyan-rgb))':'rgba(var(--cyan-rgb),0.3)'};color:${peopleDistanceMode?'rgb(var(--cyan-rgb))':'rgba(var(--cyan-rgb),0.6)'};font-family:'VT323',monospace;font-size:16px;letter-spacing:1px;padding:8px;cursor:pointer;">${PIN_ICON_SVG}${peopleDistanceMode?'BY DISTANCE':'FILTER BY DISTANCE'}</button>`;
   content.appendChild(filterBar);
   document.getElementById('rp-filter-stations-btn').addEventListener('click',openStationFilterModal);
   document.getElementById('rp-filter-distance-btn').addEventListener('click',toggleDistanceFilter);
@@ -2262,6 +2301,13 @@ function rpOpenProfile(uid){
   document.getElementById('rp-profile-username').textContent=u.username?'@'+u.username:'';
   document.getElementById('rp-profile-station').textContent=st?'@ '+st.name:'';
   document.getElementById('rp-hours').innerHTML=(u.hours||[]).map(h=>`<div class="rp-hour-chip ${hoursInBlock(currentBlockIndex).includes(h)?'current':''}">${fmtH(h)}</div>`).join('');
+  const personalAdEl=document.getElementById('rp-personal-ad');
+  if(u.personal_ad&&u.personal_ad.trim()){
+    personalAdEl.textContent=u.personal_ad;
+    personalAdEl.style.display='block';
+  } else {
+    personalAdEl.style.display='none';
+  }
   document.getElementById('rp-blip-btn').title='Send '+(u.name||u.username||'them')+' an X';
   
   // Build details line
@@ -2522,10 +2568,11 @@ document.getElementById('save-profile-btn').addEventListener('click',async()=>{
   const btn=document.getElementById('save-profile-btn');
   btn.textContent='SAVING...'; btn.disabled=true;
   const name=document.getElementById('my-name-field').value.trim();
+  const personal_ad=document.getElementById('my-personalad-field').value.trim();
   const username=document.getElementById('my-username-field').value.trim().replace('@','');
   const age=parseInt(document.getElementById('my-age-field').value)||null;
   const pronouns=document.getElementById('my-pronouns-field').value.trim();
-  const {error:profileErr}=await sb.from('users').update({name,username,age,pronouns,station_id:mySelectedStation?.id||null}).eq('id',currentUser.id);
+  const {error:profileErr}=await sb.from('users').update({name,personal_ad,username,age,pronouns,station_id:mySelectedStation?.id||null}).eq('id',currentUser.id);
   if(profileErr){console.error('profile save error:',profileErr);btn.textContent='SAVE';btn.disabled=false;alert('Could not save. Please try again.');return;}
   const today=new Date().toISOString().split('T')[0];
   sb.from('availability').delete().eq('user_id',currentUser.id).lt('date',today).then(()=>{});
@@ -2853,6 +2900,13 @@ function openProfileModal(uid){
   document.getElementById('modal-username').textContent=(u.username?'@'+u.username:'')+(u.pronouns?' · '+u.pronouns:'');
   document.getElementById('modal-station').textContent=st?'@ '+st.name:'';
   document.getElementById('modal-hours').innerHTML=(u.hours||[]).map(h=>`<div class="modal-hour-chip ${hoursInBlock(currentBlockIndex).includes(h)?'current':''}">${fmtH(h)}</div>`).join('');
+  const modalPersonalAdEl=document.getElementById('modal-personal-ad');
+  if(u.personal_ad&&u.personal_ad.trim()){
+    modalPersonalAdEl.textContent=u.personal_ad;
+    modalPersonalAdEl.style.display='block';
+  } else {
+    modalPersonalAdEl.style.display='none';
+  }
   document.getElementById('profile-modal').classList.add('show');
   document.getElementById('modal-overlay').classList.add('show');
 }
@@ -2898,6 +2952,7 @@ function renderObStep(){
     body.innerHTML=`<div class="ob-label">What should people call you? This is your display name — not your username.</div>
       <input class="ob-station-search" id="ob-name-input" placeholder="your name..." maxlength="30" style="margin-top:12px;">
       <div style="font-family:'VT323',monospace;font-size:15px;color:rgba(var(--lilac-rgb),0.6);letter-spacing:1px;margin-top:8px;">You can change this later in your profile.</div>
+      <textarea id="ob-personalad-input" placeholder="Personal ad: offering, seeking and hard nos&hellip;" maxlength="280" rows="3" style="width:100%;background:rgba(var(--white-rgb),0.05);border:2px solid rgba(var(--white-rgb),0.15);color:rgb(var(--white-rgb));font-family:'Space Mono',monospace;font-size:14px;padding:9px 12px;resize:none;outline:none;margin-top:14px;box-sizing:border-box;"></textarea>
       <label style="display:flex;align-items:flex-start;gap:8px;margin-top:18px;cursor:pointer;font-family:'VT323',monospace;font-size:17px;color:rgb(var(--cyan-rgb));letter-spacing:1px;line-height:1.4;">
         <input type="checkbox" id="ob-waitlist-check" style="margin-top:3px;accent-color:rgb(var(--cyan-rgb));flex-shrink:0;">
         <span>Email me when The Web(Site) launches in my area. We'll only use this to send you one launch announcement — no spam, unsubscribe anytime.</span>
@@ -2942,11 +2997,16 @@ function renderObStep(){
 }
 document.getElementById('ob-next').addEventListener('click',async()=>{
   if(obStep===0){
-    // Save name if entered
+    // Save name and personal ad if entered
     const nameInput=document.getElementById('ob-name-input');
     const enteredName=nameInput?nameInput.value.trim():'';
-    if(enteredName&&currentUser){
-      await sb.from('users').update({name:enteredName}).eq('id',currentUser.id);
+    const personalAdInput=document.getElementById('ob-personalad-input');
+    const enteredPersonalAd=personalAdInput?personalAdInput.value.trim():'';
+    if(currentUser&&(enteredName||enteredPersonalAd)){
+      const updates={};
+      if(enteredName) updates.name=enteredName;
+      if(enteredPersonalAd) updates.personal_ad=enteredPersonalAd;
+      await sb.from('users').update(updates).eq('id',currentUser.id);
     }
     const wlCheck=document.getElementById('ob-waitlist-check');
     const wlEmail=document.getElementById('ob-waitlist-email');
@@ -3088,6 +3148,12 @@ async function onSignedIn(){
   const hoursSinceLastOpen=lastOpenRaw?(Date.now()-parseInt(lastOpenRaw,10))/3600000:Infinity;
   localStorage.setItem('lastAppOpen',String(Date.now()));
 
+  if(pendingNotificationTap){
+    pendingNotificationTap=false;
+    goToInboxFromNotification();
+    return;
+  }
+
   if(stationData.length>0){
     if(isNewSignup) showOnboarding(0);
     else if(hoursSinceLastOpen>=12) showOnboarding(1);
@@ -3104,6 +3170,7 @@ async function loadProfile(){
   currentProfile=data;
   if(!data) return;
   document.getElementById('my-name-field').value=data.name||'';
+  document.getElementById('my-personalad-field').value=data.personal_ad||'';
   document.getElementById('my-username-field').value=data.username||'';
   document.getElementById('my-age-field').value=data.age||'';
   document.getElementById('my-pronouns-field').value=data.pronouns||'';
