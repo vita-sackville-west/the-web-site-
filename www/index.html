@@ -4,8 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <script>
-// Strip tracking params (fbclid etc) that break iOS Safari
+// Capture an invite link's ?ref=CODE before we strip query params (fbclid etc,
+// which break iOS Safari) so the signup form can pre-fill it later.
 if(window.location.search){
+  const params = new URLSearchParams(window.location.search);
+  const ref = params.get('ref');
+  if(ref) sessionStorage.setItem('pendingRefCode', ref.toUpperCase());
   const clean = window.location.origin + window.location.pathname;
   window.history.replaceState({}, document.title, clean);
 }
@@ -587,6 +591,9 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Space Mono',monosp
 #onboarding-popup{position:fixed;inset:0;background:rgba(var(--dark-rgb),0.92);z-index:150;
   display:none;align-items:center;justify-content:center;padding:1.5rem;}
 #onboarding-popup.show{display:flex;}
+#invite-popup{position:fixed;inset:0;background:rgba(var(--dark-rgb),0.92);z-index:150;
+  display:none;align-items:center;justify-content:center;padding:1.5rem;}
+#invite-popup.show{display:flex;}
 .ob-card{background:rgb(var(--dark-rgb));border:2px solid rgb(var(--pink-rgb));max-width:440px;width:100%;
   display:flex;flex-direction:column;max-height:90vh;}
 .ob-header{padding:16px 20px 12px;border-bottom:2px solid rgba(var(--pink-rgb),0.2);}
@@ -723,6 +730,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Space Mono',monosp
     <div id="signup-error" class="auth-err"></div>
     <button id="auth-signup-btn" class="auth-primary-btn">JOIN</button>
     <button id="signup-toggle" class="auth-secondary-btn">← SIGN IN</button>
+    <a href="https://thelesbianwebsite.com/waitlist" style="display:block;text-align:center;margin-top:14px;font-family:'VT323',monospace;font-size:15px;letter-spacing:1px;color:rgba(var(--pale3-rgb),0.5);">Don't have a code? Join the waitlist →</a>
   </div>
 </div>
 
@@ -922,6 +930,8 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Space Mono',monosp
         </div>
       </div>
 
+      <button class="ob-skip" id="invite-people-btn" style="margin-bottom:16px;">✉ INVITE PEOPLE</button>
+
       <div class="field-label">NAME</div>
       <input class="vita-field" id="my-name-field" placeholder="your name">
       <div class="field-label">PERSONAL AD</div>
@@ -1065,6 +1075,29 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Space Mono',monosp
     <div class="ob-footer">
       <button class="ob-next-btn" id="ob-next">NEXT →</button>
       <button class="ob-skip" id="ob-skip">↩ skip — use my last location</button>
+    </div>
+  </div>
+</div>
+
+<!-- INVITE POPUP -->
+<div id="invite-popup">
+  <div class="ob-card">
+    <div class="ob-header">
+      <div class="ob-title">INVITE PEOPLE</div>
+      <div class="ob-step">SHARE THE WEB</div>
+    </div>
+    <div class="ob-body">
+      <div class="ob-label">YOUR REFERRAL CODE</div>
+      <div class="ref-code-box" style="margin-bottom:16px;">
+        <div class="ref-code" id="invite-ref-code">—</div>
+        <div class="ref-warning">⚠ If someone using your code gets reported, you may face a temporary ban.</div>
+      </div>
+      <div class="ob-label">YOUR INVITE LINK</div>
+      <input class="vita-field" id="invite-link-field" readonly style="margin-bottom:12px;" onclick="this.select()">
+      <button class="ob-next-btn" id="invite-copy-btn" style="margin-bottom:0;">COPY LINK</button>
+    </div>
+    <div class="ob-footer">
+      <button class="ob-skip" id="invite-close-btn">CLOSE</button>
     </div>
   </div>
 </div>
@@ -3070,6 +3103,7 @@ async function closeOnboarding(reuseLastTimes=false){
   }
   loadMapUsers();
   showWelcomeToast();
+  maybeShowInvitePopup();
 }
 function showWelcomeToast(){
   const t=document.getElementById('welcome-toast');
@@ -3147,6 +3181,7 @@ async function onSignedIn(){
   const lastOpenRaw=localStorage.getItem('lastAppOpen');
   const hoursSinceLastOpen=lastOpenRaw?(Date.now()-parseInt(lastOpenRaw,10))/3600000:Infinity;
   localStorage.setItem('lastAppOpen',String(Date.now()));
+  localStorage.setItem('appOpenCount',String((parseInt(localStorage.getItem('appOpenCount')||'0',10))+1));
 
   if(pendingNotificationTap){
     pendingNotificationTap=false;
@@ -3157,12 +3192,55 @@ async function onSignedIn(){
   if(stationData.length>0){
     if(isNewSignup) showOnboarding(0);
     else if(hoursSinceLastOpen>=12) showOnboarding(1);
+    else maybeShowInvitePopup();
+  } else {
+    maybeShowInvitePopup();
   }
 }
+
+//  INVITE / REFERRAL
+const INVITE_BASE_URL='https://thelesbianwebsite.com';
+let inviteShownThisSession=false;
+function maybeShowInvitePopup(){
+  if(inviteShownThisSession) return;
+  const n=parseInt(localStorage.getItem('appOpenCount')||'0',10);
+  if(n===1||n===5){
+    inviteShownThisSession=true;
+    openInvitePopup();
+  }
+}
+function openInvitePopup(){
+  const code=currentProfile?.referral_code||'—';
+  document.getElementById('invite-ref-code').textContent=code;
+  document.getElementById('invite-link-field').value=code==='—'?INVITE_BASE_URL:`${INVITE_BASE_URL}/?ref=${code}`;
+  document.getElementById('invite-popup').classList.add('show');
+}
+function closeInvitePopup(){
+  document.getElementById('invite-popup').classList.remove('show');
+}
+document.getElementById('invite-close-btn').addEventListener('click',closeInvitePopup);
+document.getElementById('invite-copy-btn').addEventListener('click',async()=>{
+  const field=document.getElementById('invite-link-field');
+  field.select();
+  try{
+    await navigator.clipboard.writeText(field.value);
+    const btn=document.getElementById('invite-copy-btn');
+    const original=btn.textContent;
+    btn.textContent='COPIED ✓';
+    setTimeout(()=>btn.textContent=original,1500);
+  }catch(e){}
+});
+document.getElementById('invite-people-btn').addEventListener('click',openInvitePopup);
 
 function showAuth(){
   document.getElementById('auth-screen').style.display='flex';
   document.getElementById('app-wrap').style.display='none';
+  const pendingRef=sessionStorage.getItem('pendingRefCode');
+  if(pendingRef){
+    document.getElementById('signup-referral').value=pendingRef;
+    document.getElementById('auth-login').style.display='none';
+    document.getElementById('auth-signup').style.display='block';
+  }
 }
 
 async function loadProfile(){
