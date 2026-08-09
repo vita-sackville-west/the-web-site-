@@ -1,6 +1,6 @@
 {
   "appId": "com.thewebsite.app",
-  "appName": "The Web(Site)",
+  "appName": "TheWeb",
   "webDir": "www",
   "server": {
     "androidScheme": "https"
