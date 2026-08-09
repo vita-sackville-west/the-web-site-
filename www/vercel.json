@@ -4,6 +4,8 @@
     { "source": "/delete-account", "destination": "/delete-account.html" },
     { "source": "/child-safety", "destination": "/child-safety.html" },
     { "source": "/", "destination": "/index.html" },
-    { "source": "/support", "destination": "/support.html" }
+    { "source": "/support", "destination": "/support.html" },
+    { "source": "/test-flight", "destination": "/test-flight.html" },
+    { "source": "/waitlist", "destination": "/waitlist.html" }
   ]
 }
